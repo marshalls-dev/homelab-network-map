@@ -218,3 +218,41 @@ HomelabNetwork/
 ## License
 
 Personal homelab project. Adapt freely for your own network; scrub IPs and tokens before publishing.
+
+## Backup
+
+Timestamped archives (excluding secrets) are stored at:
+
+```
+~/HomelabNetwork-backups/homelab-network-YYYY-MM-DD-HHMM.tar.gz
+```
+
+Create a fresh backup anytime:
+
+```bash
+STAMP=$(date +%Y-%m-%d-%H%M)
+tar -czf ~/HomelabNetwork-backups/homelab-network-$STAMP.tar.gz \
+  -C ~/HomelabNetwork --exclude='ha-token.local' .
+```
+
+## Git & GitHub
+
+The repo is initialized on branch **`main`**. Secrets and personal LAN files stay gitignored (`known-clients.json`, `ha-token.local`, etc.).
+
+**First push** (creates the GitHub repo and pushes):
+
+```bash
+cd ~/HomelabNetwork
+brew install gh   # if needed
+gh auth login
+./scripts/publish.sh
+```
+
+Or create [homelab-network-map](https://github.com/new) manually on GitHub, then:
+
+```bash
+git remote add origin https://github.com/YOUR_USER/homelab-network-map.git
+git push -u origin main
+```
+
+Git metadata lives in `~/HomelabNetwork-backups/homelab-network-map.git` (workaround for macOS sandbox on `.git/hooks`); the project folder contains a `.git` pointer file.
