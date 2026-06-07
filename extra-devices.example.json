@@ -1,0 +1,31 @@
+[
+  {
+    "id": "wife-iphone",
+    "name": "Wife's iPhone",
+    "ips": [],
+    "ha_entity": "device_tracker.wife_iphone",
+    "personality": "edge",
+    "short": "Wife iPhone",
+    "uplink": "router-gateway",
+    "medium": "wifi",
+    "note": "Add HA entity id when known"
+  },
+  {
+    "id": "sons-tablet",
+    "name": "Son's Tablet",
+    "ips": ["10.0.0.42"],
+    "personality": "edge",
+    "short": "Son tablet",
+    "uplink": "router-gateway"
+  },
+  {
+    "id": "my-headphones",
+    "name": "My Headphones",
+    "parent": "my-iphone",
+    "parent_medium": "bluetooth",
+    "parent_note": "Bluetooth audio when connected",
+    "personality": "sensor",
+    "short": "Headphones",
+    "capacity": { "ram_gb": 0.008, "storage_gb": 0.004, "compute": 0.04 }
+  }
+]

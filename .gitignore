@@ -1,0 +1,19 @@
+# Secrets — never commit
+ha-token.local
+.ha-token
+.env
+
+# Personal LAN data
+known-clients.json
+router-online.json
+extra-devices.json
+
+# Local layout / UI state
+node-positions.json
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# OS / editor
+.DS_Store
+*.swp
+*~

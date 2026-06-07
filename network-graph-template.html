@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homelab Network — Space Map</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.8.2/dist/three-spritetext.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+  <style>
+    :root { --bg:#050510; --panel:#12121f; --text:#cdd6f4; --muted:#8b93b0; --accent:#89b4fa; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; overflow:hidden; }
+    body { display:flex; flex-direction:column; height:100vh; }
+    header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid #2a2a3d; background:linear-gradient(180deg,#14142a,#0e0e18); flex-shrink:0; flex-wrap:wrap; }
+    header h1 { margin:0; font-size:1.05rem; letter-spacing:0.02em; }
+    header p { margin:0; color:var(--muted); font-size:.8rem; }
+    .hdr-btns { display:flex; gap:8px; flex-wrap:wrap; }
+    #wrap { position:relative; flex:1; min-height:0; }
+    aside { position:absolute; top:0; left:0; bottom:0; width:290px; padding:12px; overflow:auto; border-right:1px solid #2a2a3d; background:rgba(18,18,31,0.94); font-size:.82rem; z-index:2; backdrop-filter:blur(8px); }
+    aside h2 { margin:12px 0 6px; font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+    aside h2:first-child { margin-top:0; }
+    #detail { background:rgba(30,30,46,0.9); border:1px solid #3a3a52; border-radius:8px; padding:10px; min-height:70px; white-space:pre-wrap; line-height:1.4; font-size:.8rem; }
+    #err { color:#f38ba8; margin-top:8px; display:none; font-size:.78rem; white-space:pre-wrap; }
+    #g { position:absolute; top:0; right:0; bottom:0; left:290px; }
+    .legend-row { display:flex; align-items:center; gap:8px; margin:3px 0; }
+    .swatch { width:24px; height:0; border-top:3px solid #fff; }
+    button { background:var(--accent); color:#111; border:0; border-radius:6px; padding:5px 10px; cursor:pointer; font-weight:600; font-size:.78rem; }
+    button.secondary { background:#2a2a3d; color:var(--text); }
+    .hint { color:var(--muted); font-size:.75rem; line-height:1.45; }
+    kbd { background:#2a2a3d; padding:1px 5px; border-radius:4px; font-size:.72rem; }
+    .tier { display:inline-block; font-size:.7rem; padding:1px 6px; border-radius:999px; margin-top:6px; background:#2a2a3d; color:#bac2de; }
+    #detail { white-space:normal; }
+    .detail-name { font-size:.95rem; font-weight:700; margin-bottom:4px; }
+    .detail-role { color:var(--muted); font-size:.75rem; margin-bottom:8px; line-height:1.35; }
+    .detail-mode { display:flex; align-items:center; gap:6px; font-size:.78rem; margin-bottom:8px; text-transform:capitalize; }
+    .mode-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; box-shadow:0 0 6px currentColor; }
+    .detail-tags { margin-bottom:10px; }
+    .cap-bars { margin-top:10px; }
+    .cap-row { margin-bottom:10px; }
+    .cap-label { display:flex; justify-content:space-between; font-size:.72rem; color:var(--muted); margin-bottom:3px; }
+    .cap-label b { color:var(--text); font-weight:600; }
+    .cap-track { height:7px; background:#1e1e2e; border-radius:999px; overflow:hidden; border:1px solid #2a2a3d; }
+    .cap-fill { height:100%; border-radius:999px; transition:width .4s ease; }
+    .cap-fill.ram { background:linear-gradient(90deg,#448aff,#82b1ff); }
+    .cap-fill.storage { background:linear-gradient(90deg,#66bb6a,#a5d6a7); }
+    .cap-fill.compute { background:linear-gradient(90deg,#ab47bc,#ce93d8); }
+    .cap-fill.hw { background:linear-gradient(90deg,#ffb74d,#ffe082); opacity:.85; }
+    .cap-source { font-size:.68rem; color:var(--muted); margin-top:8px; font-style:italic; }
+    .cap-score { font-size:.72rem; color:#bac2de; margin-top:6px; }
+    .detail-foot { margin-top:10px; padding-top:8px; border-top:1px solid #2a2a3d; font-size:.72rem; color:var(--muted); line-height:1.45; white-space:pre-wrap; }
+    #viewerBanner { display:none; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:linear-gradient(135deg,rgba(255,213,79,0.18),rgba(255,152,0,0.08)); border:1px solid rgba(255,213,79,0.35); font-size:.78rem; }
+    #viewerBanner b { color:#ffe082; }
+    #haWarning { display:none; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:rgba(243,139,168,0.12); border:1px solid rgba(243,139,168,0.35); font-size:.75rem; color:#f5c2e7; line-height:1.45; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Homelab Network — Space Map</h1>
+      <p id="meta">Loading…</p>
+    </div>
+    <div class="hdr-btns">
+      <button class="secondary" onclick="reloadData()">Refresh data</button>
+      <button class="secondary" onclick="saveLayout()">Save layout</button>
+      <button class="secondary" onclick="releaseAll()">Unpin all</button>
+      <button class="secondary" onclick="resetLayout()">Reset layout</button>
+      <button onclick="toggleAuto()">Auto: <span id="autoState">off</span></button>
+    </div>
+  </header>
+  <div id="wrap">
+    <aside>
+      <div id="haWarning"><b>HA off</b> — phones &amp; tablets won't appear until you add <code>ha-token.local</code> and restart <code>--serve</code>.</div>
+      <div id="viewerBanner"><b>📍 You are here</b> — <span id="viewerLabel">detecting…</span></div>
+      <h2>Selected</h2>
+      <div id="detail">Click a device for details.</div>
+      <div id="err"></div>
+      <h2>Scale legend</h2>
+      <p class="hint">
+        Size = <b>RAM + storage + compute</b><br>
+        <span class="tier">giant</span> top capability (ZBook)<br>
+        <span class="tier">planet</span> Macs · WSL · HA<br>
+        <span class="tier">moon</span> displays · services<br>
+        <span class="tier">asteroid</span> plugs · sensors<br>
+        <span class="tier">hub</span> router — small body, wide orbit rings<br>
+        <span class="hint">Purple tethers = runs inside parent (WSL → ZBook, HA → WSL)</span><br>
+      </p>
+      <h2>Navigation</h2>
+      <p class="hint">
+        <kbd>Drag</kbd> — orbit · <kbd>Scroll</kbd> — zoom<br>
+        <kbd>Right-drag</kbd> — pan · <kbd>Drag node</kbd> — pin<br>
+        <kbd>Double-click</kbd> / <kbd>Right-click node</kbd> — unpin
+      </p>
+      <h2>Link types</h2>
+      <div id="legend"></div>
+    </aside>
+    <div id="g"></div>
+  </div>
+  <script type="application/json" id="network-data">__NETWORK_DATA_JSON__</script>
+  <script>
+    var graph = null, raw = null, gData = null, autoTimer = null;
+    var REFRESH_SEC = 30, LS_KEY = 'homelab-node-positions-v2';
+    var lastClick = { id: null, t: 0 };
+    var starField = null, orbitGroup = null, nestTetherGroup = null, viewerPinGroup = null;
+    var labelSprites = [], nodeVisuals = {};
+    var pulseClock = 0;
+    var viewerDeviceId = null, viewerDeviceName = null;
+
+    function showError(msg) {
+      document.getElementById('err').style.display = 'block';
+      document.getElementById('err').textContent = msg;
+    }
+
+    function readEmbedded() {
+      var el = document.getElementById('network-data');
+      if (!el || !el.textContent.trim()) return null;
+      try { return JSON.parse(el.textContent); }
+      catch (e) { showError('Bad JSON: ' + e.message); return null; }
+    }
+
+    function getSavedPositions(api) {
+      try {
+        var ls = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        if (Object.keys(ls).length) return ls;
+      } catch (e) {}
+      return api.saved_positions || {};
+    }
+
+    function posObj(p) {
+      if (!p) return null;
+      if (Array.isArray(p)) return { x: p[0], y: p[1], z: p[2] };
+      return p;
+    }
+
+    function nodeRadius(n) { return Math.pow(n.val || 5, 0.55) * 2.8; }
+
+    function fmtGb(n) {
+      if (n == null || isNaN(n)) return '—';
+      return (n >= 10 ? Math.round(n) : Number(n).toFixed(1)) + ' GB';
+    }
+
+    function barFillClass(kind, pct) {
+      if (pct == null || isNaN(pct)) return 0;
+      return Math.max(0, Math.min(100, pct));
+    }
+
+    function updateViewerBanner() {
+      var banner = document.getElementById('viewerBanner');
+      var label = document.getElementById('viewerLabel');
+      var haWarn = document.getElementById('haWarning');
+      if (haWarn) haWarn.style.display = (raw && raw.ha_api) ? 'none' : 'block';
+      if (viewerDeviceId && viewerDeviceName) {
+        banner.style.display = 'block';
+        label.textContent = viewerDeviceName;
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    async function fetchViewer(api) {
+      viewerDeviceId = null;
+      viewerDeviceName = null;
+      try {
+        var res = await fetch('/api/viewer?t=' + Date.now());
+        if (res.ok) {
+          var v = await res.json();
+          if (v.device_id) {
+            viewerDeviceId = v.device_id;
+            viewerDeviceName = v.device_name || v.device_id;
+            return;
+          }
+        }
+      } catch (e) {}
+      if (api && api.scanner_device_id) {
+        viewerDeviceId = api.scanner_device_id;
+        var node = (api.nodes || []).find(function(n) { return n.id === viewerDeviceId; });
+        viewerDeviceName = node ? (node.shortName || node.label) : viewerDeviceId;
+      }
+    }
+
+    function renderDetail(node) {
+      if (!node) {
+        document.getElementById('detail').innerHTML = 'Click a device for details.';
+        return;
+      }
+      var m = node.metrics || {};
+      var hwPct = Math.round((m.compute_hw != null ? m.compute_hw : node.compute || 0) * 100);
+      var capPct = node.capability_pct != null ? node.capability_pct : '—';
+      var html = '';
+      html += '<div class="detail-name">' + (node.shortName || node.name);
+      if (viewerDeviceId && node.id === viewerDeviceId) html += ' <span class="tier">📍 you</span>';
+      html += '</div>';
+      html += '<div class="detail-role">' + ((node.title || '').split('\n')[1] || '');
+      if (node.nest_label) html += '<br><span class="tier">inside ' + node.nest_label + '</span>';
+      html += '</div>';
+      html += '<div class="detail-mode"><span class="mode-dot" style="background:' + (node.border || '#6c7086') + '"></span>' +
+        (node.status || 'unknown') + ' · ' + (node.mode || 'unknown') +
+        (node.pulse === 'strong' ? ' · pulsing' : node.pulse === 'soft' ? ' · idle glow' : '') + '</div>';
+      html += '<div class="detail-tags"><span class="tier">' + (node.personality || 'sensor') + '</span> ' +
+        '<span class="tier">' + (node.tier || 'moon') + '</span> ' +
+        '<span class="tier">' + capPct + '% cap</span></div>';
+      html += '<div class="cap-bars">';
+      html += '<div class="cap-row"><div class="cap-label"><span>RAM</span><span><b>' + fmtGb(m.ram_gb != null ? m.ram_gb : node.ram_gb) +
+        '</b>' + (m.ram_used_pct != null ? ' · ' + m.ram_used_pct + '% used' : '') + '</span></div>' +
+        '<div class="cap-track"><div class="cap-fill ram" style="width:' + barFillClass('ram', m.ram_used_pct) + '%"></div></div></div>';
+      html += '<div class="cap-row"><div class="cap-label"><span>Storage</span><span><b>' + fmtGb(m.storage_gb != null ? m.storage_gb : node.storage_gb) +
+        '</b>' + (m.storage_used_pct != null ? ' · ' + m.storage_used_pct + '% used' : '') + '</span></div>' +
+        '<div class="cap-track"><div class="cap-fill storage" style="width:' + barFillClass('storage', m.storage_used_pct) + '%"></div></div></div>';
+      html += '<div class="cap-row"><div class="cap-label"><span>Compute</span><span><b>' + hwPct + '% hardware</b>' +
+        (m.cpu_load_pct != null ? ' · ' + m.cpu_load_pct + '% load' : '') + '</span></div>' +
+        '<div class="cap-track"><div class="cap-fill compute" style="width:' + barFillClass('compute', m.cpu_load_pct) + '%"></div></div></div>';
+      html += '<div class="cap-row"><div class="cap-label"><span>Map scale</span><span><b>' + capPct + '% of lab</b></span></div>' +
+        '<div class="cap-track"><div class="cap-fill hw" style="width:' + barFillClass('hw', capPct) + '%"></div></div></div>';
+      html += '</div>';
+      if (m.source && m.source !== 'static') html += '<div class="cap-source">Live: ' + m.source + '</div>';
+      html += '<div class="cap-score">Capability score ' + (node.capability != null ? node.capability : '—') + '</div>';
+      var footLines = (node.title || '').split('\n').slice(2);
+      if (footLines.length) html += '<div class="detail-foot">' + footLines.join('\n') + '</div>';
+      document.getElementById('detail').innerHTML = html;
+    }
+
+    function buildGraphData(api) {
+      var saved = getSavedPositions(api);
+      var seeds = api.layout_seeds || {};
+      var nodes = api.nodes.map(function(n) {
+        var node = {
+          id: n.id,
+          name: n.label,
+          shortName: n.shortName || n.label,
+          title: (n.title || '').replace(/\\n/g, '\n'),
+          color: n.color,
+          val: n.val || 5,
+          tier: n.tier || 'moon',
+          personality: n.personality || 'sensor',
+          capability: n.capability || 0,
+          capability_pct: n.capability_pct || 0,
+          ram_gb: n.ram_gb || 0,
+          storage_gb: n.storage_gb || 0,
+          compute: n.compute || 0.2,
+          labelSize: n.labelSize || 4,
+          glow: n.glow != null ? n.glow : 0.15,
+          status: n.status || 'unknown',
+          mode: n.mode || 'unknown',
+          border: n.border || '#6c7086',
+          pulse: n.pulse || 'off',
+          metrics: n.metrics || {
+            ram_gb: n.ram_gb || 0,
+            storage_gb: n.storage_gb || 0,
+            compute_hw: n.compute || 0.2,
+            ram_used_pct: null,
+            storage_used_pct: null,
+            cpu_load_pct: null,
+            source: 'static'
+          },
+          runs_on: n.runs_on || null,
+          nest_label: n.nest_label || null
+        };
+        var p = posObj(saved[n.id] || seeds[n.id]);
+        if (p) {
+          node.x = p.x; node.y = p.y; node.z = p.z;
+          if (saved[n.id]) { node.fx = p.x; node.fy = p.y; node.fz = p.z; }
+        }
+        return node;
+      });
+      var links = api.edges.map(function(e) {
+        return {
+          source: e.source || e.from,
+          target: e.target || e.to,
+          label: e.label,
+          title: e.title,
+          color: typeof e.color === 'string' ? e.color : '#78909c',
+          width: e.width || 1,
+          directed: !!e.directed,
+          medium: e.medium || ''
+        };
+      });
+      return { nodes: nodes, links: links };
+    }
+
+    function sizeGraph() {
+      if (!graph) return;
+      var el = document.getElementById('g');
+      graph.width(el.clientWidth).height(el.clientHeight);
+    }
+
+    function collectPositions() {
+      if (!gData) return {};
+      var out = {};
+      gData.nodes.forEach(function(n) {
+        out[n.id] = { x: n.fx != null ? n.fx : n.x, y: n.fy != null ? n.fy : n.y, z: n.fz != null ? n.fz : n.z };
+      });
+      return out;
+    }
+
+    function saveLayout() {
+      localStorage.setItem(LS_KEY, JSON.stringify(collectPositions()));
+      fetch('/api/positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collectPositions()) }).catch(function(){});
+    }
+
+    function releaseAll() {
+      if (!gData || !graph) return;
+      gData.nodes.forEach(function(n) { delete n.fx; delete n.fy; delete n.fz; });
+      graph.graphData(gData);
+      graph.d3ReheatSimulation();
+    }
+
+    function resetLayout() {
+      localStorage.removeItem(LS_KEY);
+      fetch('/api/positions', { method: 'DELETE' }).catch(function(){});
+      reloadData(true);
+    }
+
+    function pinNode(node) { node.fx = node.x; node.fy = node.y; node.fz = node.z; }
+
+    function unpinNode(node) {
+      delete node.fx; delete node.fy; delete node.fz;
+      if (graph) graph.d3ReheatSimulation();
+    }
+
+    function focusCamera() {
+      if (!graph) return;
+      graph.cameraPosition({ x: 0, y: 80, z: 520 }, { x: 0, y: 0, z: 0 }, 1000);
+    }
+
+    function addStarfield(scene) {
+      var geom = new THREE.BufferGeometry();
+      var n = 5000;
+      var pos = new Float32Array(n * 3);
+      for (var i = 0; i < n; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 5000;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * 5000;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 5000;
+      }
+      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      var mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.4, sizeAttenuation: true, transparent: true, opacity: 0.85 });
+      starField = new THREE.Points(geom, mat);
+      scene.add(starField);
+      var geom2 = new THREE.BufferGeometry();
+      var n2 = 800;
+      var pos2 = new Float32Array(n2 * 3);
+      for (var j = 0; j < n2; j++) {
+        pos2[j * 3] = (Math.random() - 0.5) * 6000;
+        pos2[j * 3 + 1] = (Math.random() - 0.5) * 6000;
+        pos2[j * 3 + 2] = (Math.random() - 0.5) * 6000;
+      }
+      geom2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
+      var mat2 = new THREE.PointsMaterial({ color: 0x8899ff, size: 2.2, sizeAttenuation: true, transparent: true, opacity: 0.35 });
+      scene.add(new THREE.Points(geom2, mat2));
+    }
+
+    function makeOrbitRing(radius, color, opacity, tiltX, tiltZ) {
+      var pts = [];
+      for (var i = 0; i <= 96; i++) {
+        var a = (i / 96) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius * 0.82));
+      }
+      var geom = new THREE.BufferGeometry().setFromPoints(pts);
+      var mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: opacity });
+      var ring = new THREE.LineLoop(geom, mat);
+      ring.rotation.x = tiltX || 0;
+      ring.rotation.z = tiltZ || 0;
+      return ring;
+    }
+
+    function buildOrbitDecor(scene, hubs) {
+      orbitGroup = new THREE.Group();
+      var configs = {
+        'router-gateway': [
+          { r: 130, c: 0xffb74d, o: 0.38 },
+          { r: 200, c: 0xffcc80, o: 0.16 },
+          { r: 260, c: 0xffe082, o: 0.07 }
+        ],
+        'zbook-wifi': [
+          { r: 100, c: 0x448aff, o: 0.22 },
+          { r: 145, c: 0x64b5f6, o: 0.1 },
+          { r: 58, c: 0x74c7ec, o: 0.28 },
+          { r: 78, c: 0xce93d8, o: 0.14 }
+        ],
+        'homeassistant': [{ r: 75, c: 0xce93d8, o: 0.18 }]
+      };
+      hubs.forEach(function(hid) {
+        (configs[hid] || []).forEach(function(cfg, idx) {
+          var ring = makeOrbitRing(cfg.r, cfg.c, cfg.o, 1.1 + idx * 0.3, idx * 0.4);
+          ring.userData = { hubId: hid, spin: 0.0004 + idx * 0.0002 };
+          orbitGroup.add(ring);
+        });
+      });
+      scene.add(orbitGroup);
+    }
+
+    function buildNestTethers(scene, nodes) {
+      if (nestTetherGroup && scene) scene.remove(nestTetherGroup);
+      nestTetherGroup = new THREE.Group();
+      nodes.forEach(function(child) {
+        if (!child.runs_on) return;
+        var geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        var line = new THREE.Line(
+          geom,
+          new THREE.LineBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.42 })
+        );
+        line.userData = { childId: child.id, parentId: child.runs_on };
+        nestTetherGroup.add(line);
+      });
+      scene.add(nestTetherGroup);
+    }
+
+    function buildViewerPin(scene) {
+      if (viewerPinGroup && scene) scene.remove(viewerPinGroup);
+      viewerPinGroup = null;
+      if (!viewerDeviceId) return;
+      viewerPinGroup = new THREE.Group();
+      var mat = new THREE.MeshBasicMaterial({ color: 0xffd54f, transparent: true, opacity: 0.95, depthTest: false });
+      var headMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b, transparent: true, opacity: 0.98, depthTest: false });
+      var shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 16, 8), mat);
+      shaft.position.y = 8;
+      var head = new THREE.Mesh(new THREE.ConeGeometry(2.4, 8, 8), headMat);
+      head.position.y = 20;
+      head.rotation.x = Math.PI;
+      var ring = new THREE.Mesh(
+        new THREE.TorusGeometry(2.2, 0.35, 6, 24),
+        new THREE.MeshBasicMaterial({ color: 0xffeb3b, transparent: true, opacity: 0.85, depthTest: false })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.5;
+      viewerPinGroup.add(ring);
+      viewerPinGroup.add(shaft);
+      viewerPinGroup.add(head);
+      viewerPinGroup.renderOrder = 1002;
+      scene.add(viewerPinGroup);
+    }
+
+    function updateViewerPinPosition() {
+      if (!viewerPinGroup || !gData || !viewerDeviceId) return;
+      var node = gData.nodes.find(function(n) { return n.id === viewerDeviceId; });
+      if (!node || node.x == null) return;
+      var r = nodeRadius(node);
+      var scale = Math.max(0.7, Math.min(1.35, r / 11));
+      viewerPinGroup.scale.set(scale, scale, scale);
+      viewerPinGroup.position.set(node.x, node.y + r + 1, node.z);
+      viewerPinGroup.rotation.set(0, 0, 0);
+    }
+
+    function updateNestTethers() {
+      if (!nestTetherGroup || !gData) return;
+      nestTetherGroup.children.forEach(function(line) {
+        var child = gData.nodes.find(function(n) { return n.id === line.userData.childId; });
+        var parent = gData.nodes.find(function(n) { return n.id === line.userData.parentId; });
+        if (!child || !parent || child.x == null || parent.x == null) return;
+        line.geometry.setFromPoints([
+          new THREE.Vector3(parent.x, parent.y, parent.z),
+          new THREE.Vector3(child.x, child.y, child.z)
+        ]);
+      });
+    }
+
+    function updateOrbitsLabelsPulse() {
+      if (!graph || !gData) return;
+      var cam = graph.camera();
+      var camDist = cam.position.distanceTo(new THREE.Vector3(0, 0, 0));
+      pulseClock = performance.now() * 0.001;
+
+      if (orbitGroup) {
+        orbitGroup.children.forEach(function(ring) {
+          var hid = ring.userData.hubId;
+          var node = gData.nodes.find(function(n) { return n.id === hid; });
+          if (node && node.x != null) {
+            ring.position.set(node.x, node.y, node.z);
+            ring.rotation.y += ring.userData.spin || 0.0003;
+          }
+        });
+      }
+
+      labelSprites.forEach(function(entry) {
+        var scale = Math.max(0.85, Math.min(2.2, camDist / 280)) * (entry.baseSize / 5);
+        entry.sprite.textHeight = scale * 5;
+      });
+
+      updateNestTethers();
+      updateViewerPinPosition();
+
+      Object.keys(nodeVisuals).forEach(function(id) {
+        var v = nodeVisuals[id];
+        if (!v || !v.core || !v.core.material) return;
+        var mat = v.core.material;
+        var offline = v.status === 'offline';
+        if (offline) {
+          mat.emissiveIntensity = v.baseGlow * 0.2;
+          if (v.modeRing) v.modeRing.material.opacity = 0.18;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.25;
+          if (v.hubWire) v.hubWire.material.opacity = 0.1;
+          return;
+        }
+        if (v.pulse === 'strong') {
+          var amp = 0.22 + (v.cpuLoad || 0) / 100 * 0.18;
+          mat.emissiveIntensity = v.baseGlow + Math.sin(pulseClock * 2.8) * amp;
+          if (v.modeRing) v.modeRing.material.opacity = 0.42 + Math.sin(pulseClock * 2.8 + 0.5) * 0.14;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.55 + Math.sin(pulseClock * 2.8 + 0.5) * 0.12;
+          if (v.hubWire) v.hubWire.material.opacity = 0.2 + Math.sin(pulseClock * 2.8) * 0.08;
+        } else if (v.pulse === 'soft') {
+          mat.emissiveIntensity = v.baseGlow + Math.sin(pulseClock * 1.1) * 0.06;
+          if (v.modeRing) v.modeRing.material.opacity = 0.38;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.48;
+          if (v.hubWire) v.hubWire.material.opacity = 0.16;
+        } else {
+          mat.emissiveIntensity = v.baseGlow;
+          if (v.modeRing) v.modeRing.material.opacity = 0.45;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.58;
+          if (v.hubWire) v.hubWire.material.opacity = 0.18;
+        }
+      });
+    }
+
+    function makeNodeObject(node) {
+      var group = new THREE.Group();
+      var r = nodeRadius(node);
+      var col = new THREE.Color(node.color || '#89b4fa');
+      var p = node.personality || 'sensor';
+      var storageFactor = Math.min(1.2, Math.log10((node.storage_gb || 0.1) + 1) * 0.35);
+
+      var core = new THREE.Mesh(
+        new THREE.SphereGeometry(r, 22, 22),
+        new THREE.MeshLambertMaterial({
+          color: col, transparent: true, opacity: 0.93,
+          emissive: col, emissiveIntensity: node.glow || 0.2
+        })
+      );
+      group.add(core);
+
+      var modeCol = new THREE.Color(node.border || '#6c7086');
+      var modeRing = new THREE.Mesh(
+        new THREE.SphereGeometry(r * 1.72, 12, 12),
+        new THREE.MeshBasicMaterial({
+          color: modeCol, transparent: true, opacity: 0.48, wireframe: true,
+          depthWrite: false
+        })
+      );
+      modeRing.renderOrder = 2;
+      group.add(modeRing);
+
+      var isViewer = viewerDeviceId && node.id === viewerDeviceId;
+      var ringCol = isViewer ? new THREE.Color(0xffd54f) : modeCol;
+      var equatorRing = new THREE.Mesh(
+        new THREE.TorusGeometry(r * (isViewer ? 1.55 : 1.38), Math.max(0.35, r * (isViewer ? 0.11 : 0.07)), 6, 40),
+        new THREE.MeshBasicMaterial({
+          color: ringCol, transparent: true, opacity: isViewer ? 0.88 : 0.62,
+          depthWrite: false
+        })
+      );
+      equatorRing.rotation.x = Math.PI / 2;
+      equatorRing.renderOrder = 3;
+      group.add(equatorRing);
+
+      nodeVisuals[node.id] = {
+        core: core,
+        modeRing: modeRing,
+        equatorRing: equatorRing,
+        baseGlow: node.glow || 0.2,
+        pulse: node.pulse || 'off',
+        status: node.status || 'unknown',
+        cpuLoad: (node.metrics && node.metrics.cpu_load_pct) || 0
+      };
+
+      if (p === 'workhorse' || p === 'engine') {
+        group.add(new THREE.Mesh(
+          new THREE.SphereGeometry(r * (1.25 + storageFactor * 0.15), 18, 18),
+          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.07 })
+        ));
+        group.add(new THREE.Mesh(
+          new THREE.SphereGeometry(r * 1.55, 14, 14),
+          new THREE.MeshBasicMaterial({ color: 0x448aff, transparent: true, opacity: 0.04 })
+        ));
+        if (node.runs_on) {
+          group.add(new THREE.Mesh(
+            new THREE.SphereGeometry(r * 1.12, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0x74c7ec, transparent: true, opacity: 0.16, wireframe: true, depthWrite: false })
+          ));
+        }
+      } else if (p === 'hub') {
+        var hubWire = new THREE.Mesh(
+          new THREE.SphereGeometry(r * 3.4, 10, 10),
+          new THREE.MeshBasicMaterial({
+            color: 0xffb74d, transparent: true, opacity: 0.22, wireframe: true,
+            depthWrite: false
+          })
+        );
+        hubWire.renderOrder = 1;
+        group.add(hubWire);
+        nodeVisuals[node.id].hubWire = hubWire;
+      } else if (p === 'service') {
+        group.add(new THREE.Mesh(
+          new THREE.SphereGeometry(r * 1.3, 14, 14),
+          new THREE.MeshBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.08 })
+        ));
+        if (node.runs_on) {
+          group.add(new THREE.Mesh(
+            new THREE.SphereGeometry(r * 1.08, 10, 10),
+            new THREE.MeshBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.14, wireframe: true, depthWrite: false })
+          ));
+        }
+      } else if (storageFactor > 0.15 && p === 'edge') {
+        group.add(new THREE.Mesh(
+          new THREE.SphereGeometry(r * (1.2 + storageFactor * 0.1), 14, 14),
+          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.06 })
+        ));
+      }
+
+      if (typeof SpriteText !== 'undefined') {
+        var labelText = node.shortName || node.name;
+        if (node.runs_on) labelText = '↳ ' + labelText;
+        var spr = new SpriteText(labelText);
+        if (isViewer) { spr.color = '#fff9c4'; spr.fontWeight = 'bold'; }
+        else if (p === 'workhorse') { spr.color = '#fff3e0'; spr.fontWeight = 'bold'; }
+        else if (p === 'hub') { spr.color = '#ffe082'; spr.fontWeight = 'bold'; }
+        else if (p === 'edge') { spr.color = '#b2ebf2'; }
+        else if (p === 'service') { spr.color = '#e1bee7'; }
+        else { spr.color = '#b0bec5'; }
+        spr.textHeight = node.labelSize || 5;
+        spr.backgroundColor = 'rgba(8,12,28,0.88)';
+        spr.padding = 2.5;
+        spr.borderRadius = 4;
+        spr.material.depthTest = false;
+        spr.material.depthWrite = false;
+        spr.renderOrder = 999;
+        spr.position.y = r + (node.tier === 'asteroid' ? 10 : 14) + (node.labelSize || 5) * 0.35;
+        group.add(spr);
+        labelSprites.push({ sprite: spr, baseSize: node.labelSize || 5, nodeId: node.id });
+      }
+
+      return group;
+    }
+
+    function initGraph() {
+      if (typeof ForceGraph3D === 'undefined') {
+        showError('3d-force-graph failed to load.');
+        return false;
+      }
+      try {
+        var el = document.getElementById('g');
+        graph = ForceGraph3D()(el);
+        graph.backgroundColor('#050510');
+        graph.enableNavigationControls(true);
+        graph.nodeLabel(function(n) { return n.title || n.name; });
+        graph.nodeThreeObject(makeNodeObject);
+        graph.nodeThreeObjectExtend(false);
+        graph.linkColor(function(l) { return l.color || '#556'; });
+        graph.linkWidth(function(l) { return Math.max(0.4, (l.width || 1) * 0.55); });
+        graph.linkOpacity(0.42);
+        graph.linkLabel(function(l) { return (l.label || '') + (l.title ? '\n' + l.title : ''); });
+        graph.linkDirectionalArrowLength(function(l) { return l.directed ? 3 : 0; });
+        graph.linkDirectionalArrowRelPos(0.88);
+        graph.linkCurvature(0.18);
+        graph.linkDirectionalParticles(function(l) { return l.directed ? 1 : 0; });
+        graph.linkDirectionalParticleWidth(1.2);
+        graph.linkDirectionalParticleSpeed(0.004);
+        graph.onNodeDragEnd(pinNode);
+        graph.onNodeRightClick(unpinNode);
+        graph.onNodeClick(function(node) {
+          var now = Date.now();
+          if (lastClick.id === node.id && now - lastClick.t < 400) {
+            unpinNode(node);
+            lastClick.id = null;
+          } else {
+            lastClick = { id: node.id, t: now };
+            renderDetail(node);
+          }
+        });
+        graph.d3Force('charge').strength(function(n) { return -120 - (n.val || 5) * 28; });
+        graph.d3Force('link').distance(function(l) {
+          var sid = l.source.id || l.source;
+          var tid = l.target.id || l.target;
+          var s = gData && gData.nodes.find(function(n) { return n.id === sid; });
+          var t = gData && gData.nodes.find(function(n) { return n.id === tid; });
+          if (s && t && (s.runs_on === tid || t.runs_on === sid)) return 22;
+          if (l.medium === 'docker_bridge') return 38;
+          return 100 + ((s && s.val) || 5) * 5 + ((t && t.val) || 5) * 5;
+        });
+        graph.d3VelocityDecay(0.35);
+        graph.warmupTicks(100);
+        graph.cooldownTicks(180);
+
+        var scene = graph.scene();
+        scene.fog = new THREE.FogExp2(0x050510, 0.00045);
+        addStarfield(scene);
+
+        graph.onEngineTick(updateOrbitsLabelsPulse);
+
+        sizeGraph();
+        window.addEventListener('resize', sizeGraph);
+        return true;
+      } catch (e) {
+        showError('Graph init failed: ' + e.message);
+        graph = null;
+        return false;
+      }
+    }
+
+    function applyData(api) {
+      if (!api || !api.nodes) { showError('No network data'); return; }
+      raw = api;
+      labelSprites = [];
+      nodeVisuals = {};
+      document.getElementById('err').style.display = 'none';
+      document.getElementById('meta').textContent =
+        'Updated ' + api.generated + ' · ' + api.scanner +
+        ' · HA ' + (api.ha_api ? 'on' : 'off') +
+        (api.ha_discovered ? ' · HA+' + api.ha_discovered : '') +
+        (api.arp_discovered ? ' · LAN+' + api.arp_discovered : '') +
+        ' · Glances ' + (api.glances ? 'live' : 'off') +
+        (viewerDeviceName ? ' · 📍 ' + viewerDeviceName : '') +
+        ' · ' + api.nodes.length + ' bodies · ' + api.edges.length + ' links · space view';
+      updateViewerBanner();
+
+      gData = buildGraphData(api);
+
+      if (!graph && !initGraph()) return;
+      if (!graph) return;
+
+      if (orbitGroup && graph.scene()) {
+        graph.scene().remove(orbitGroup);
+        orbitGroup = null;
+      }
+      buildOrbitDecor(graph.scene(), api.orbit_hubs || ['router-gateway', 'zbook-wifi']);
+      buildNestTethers(graph.scene(), gData.nodes);
+      buildViewerPin(graph.scene());
+
+      graph.graphData(gData);
+      sizeGraph();
+      setTimeout(focusCamera, 400);
+
+      document.getElementById('legend').innerHTML = Object.entries(api.medium_legend).map(function(entry) {
+        var label = entry[1];
+        var edge = api.edges.find(function(e) { return e.label && e.label.indexOf(label) === 0; });
+        var color = edge ? (typeof edge.color === 'string' ? edge.color : '#78909c') : '#78909c';
+        return '<div class="legend-row"><span class="swatch" style="border-color:' + color + '"></span>' + label + '</div>';
+      }).join('');
+    }
+
+    function mergeLivePositions(api) {
+      if (!gData || !graph) return api;
+      api.saved_positions = Object.assign({}, api.saved_positions || {}, collectPositions());
+      return api;
+    }
+
+    async function reloadData(forceReset) {
+      try {
+        var res = await fetch('network-data.json?t=' + Date.now());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var api = await res.json();
+        await fetchViewer(api);
+        if (!forceReset) api = mergeLivePositions(api);
+        applyData(api);
+      } catch (e) {
+        var embedded = readEmbedded();
+        if (embedded) {
+          await fetchViewer(embedded);
+          applyData(embedded);
+        } else showError('Load failed: ' + e.message);
+      }
+    }
+
+    function toggleAuto() {
+      var el = document.getElementById('autoState');
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; el.textContent = 'off'; return; }
+      el.textContent = REFRESH_SEC + 's';
+      autoTimer = setInterval(function() { reloadData(false); }, REFRESH_SEC * 1000);
+    }
+
+    window.addEventListener('load', function() { reloadData(false); });
+  </script>
+</body>
+</html>

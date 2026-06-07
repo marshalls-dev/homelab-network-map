@@ -1,0 +1,65 @@
+{
+  "_comment": "Host names from Videotron Helix Fi · matched to LAN IPs via MAC patterns",
+  "by_hostname": {
+    "ESP_18FE85": {
+      "mac_suffix": "18:fe:85",
+      "name": "ESP IoT (CT-LED / strip)",
+      "short": "ESP fe85",
+      "personality": "sensor"
+    },
+    "ESP_DA27EA": {
+      "mac_suffix": "da:27:ea",
+      "name": "ESP IoT (Amazon plug)",
+      "short": "ESP 105",
+      "personality": "sensor"
+    },
+    "android-2b5944fabe59398b": {
+      "mac_prefix": "18:e7:b0",
+      "name": "Fire Tablet",
+      "short": "Fire tab",
+      "personality": "edge",
+      "hardware": "Amazon Fire · Helix android device"
+    },
+    "iPhone": {
+      "note": "Generic Helix name — not Mashalls iPhone (see MashaltsiPhone in HA)",
+      "mac_random_apple": true
+    },
+    "iPad": {
+      "mac_random_apple": true
+    },
+    "MashaltsiPhone": {
+      "ha_entity": "device_tracker.mashall_spratts_iphone",
+      "note": "Already imported from Home Assistant"
+    },
+    "refrigerator": {
+      "name": "Smart Refrigerator",
+      "short": "Fridge",
+      "personality": "sensor"
+    },
+    "Google-Home-Mini": {
+      "name": "Google Home Mini",
+      "short": "Home Mini",
+      "personality": "sensor"
+    },
+    "DESKTOP-D1H9I0P": {
+      "id": "zbook-wifi",
+      "note": "Already in map as ZBook"
+    },
+    "Mac": {
+      "id": "mac-primary",
+      "note": "Already in map as This Mac"
+    },
+    "MacBookAir": {
+      "id": "macbook-air-stale",
+      "name": "MacBook Air",
+      "short": "MacBook Air",
+      "personality": "edge",
+      "power_profile": "standby_capable",
+      "note": "May appear in ARP as ghost when powered off"
+    },
+    "HomeBases-MBP": {
+      "id": "old-macbook",
+      "note": "Likely Old Mac / HomeBase MacBook"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "by_ip": {
+    "10.0.0.200": {
+      "id": "wife-iphone",
+      "name": "Wife's iPhone",
+      "short": "Wife iPhone",
+      "personality": "edge",
+      "role": "Family phone · Wi‑Fi"
+    },
+    "10.0.0.208": {
+      "id": "family-ipad",
+      "name": "Family iPad",
+      "short": "iPad",
+      "personality": "edge"
+    },
+    "10.0.0.58": {
+      "id": "fire-tablet",
+      "name": "Fire Tablet",
+      "short": "Fire tab",
+      "personality": "edge",
+      "hardware": "Amazon Fire · Fully Kiosk or browser"
+    }
+  },
+  "by_mac": {
+    "c8:2b:96:da:32:4b": {
+      "id": "fire-tablet",
+      "name": "Fire Tablet",
+      "short": "Fire tab"
+    }
+  }
+}

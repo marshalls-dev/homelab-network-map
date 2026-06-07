@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homelab Network — Space Map</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.8.2/dist/three-spritetext.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+  <style>
+    :root { --bg:#050510; --panel:#12121f; --text:#cdd6f4; --muted:#8b93b0; --accent:#89b4fa; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; overflow:hidden; }
+    body { display:flex; flex-direction:column; height:100vh; }
+    header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid #2a2a3d; background:linear-gradient(180deg,#14142a,#0e0e18); flex-shrink:0; flex-wrap:wrap; }
+    header h1 { margin:0; font-size:1.05rem; letter-spacing:0.02em; }
+    header p { margin:0; color:var(--muted); font-size:.8rem; }
+    .hdr-btns { display:flex; gap:8px; flex-wrap:wrap; }
+    #wrap { position:relative; flex:1; min-height:0; }
+    aside { position:absolute; top:0; left:0; bottom:0; width:290px; padding:12px; overflow:auto; border-right:1px solid #2a2a3d; background:rgba(18,18,31,0.94); font-size:.82rem; z-index:2; backdrop-filter:blur(8px); }
+    aside h2 { margin:12px 0 6px; font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+    aside h2:first-child { margin-top:0; }
+    #detail { background:rgba(30,30,46,0.9); border:1px solid #3a3a52; border-radius:8px; padding:10px; min-height:70px; white-space:pre-wrap; line-height:1.4; font-size:.8rem; }
+    #err { color:#f38ba8; margin-top:8px; display:none; font-size:.78rem; white-space:pre-wrap; }
+    #g { position:absolute; top:0; right:0; bottom:0; left:290px; }
+    .legend-row { display:flex; align-items:center; gap:8px; margin:3px 0; }
+    .swatch { width:24px; height:0; border-top:3px solid #fff; }
+    button { background:var(--accent); color:#111; border:0; border-radius:6px; padding:5px 10px; cursor:pointer; font-weight:600; font-size:.78rem; }
+    button.secondary { background:#2a2a3d; color:var(--text); }
+    .hint { color:var(--muted); font-size:.75rem; line-height:1.45; }
+    kbd { background:#2a2a3d; padding:1px 5px; border-radius:4px; font-size:.72rem; }
+    .tier { display:inline-block; font-size:.7rem; padding:1px 6px; border-radius:999px; margin-top:6px; background:#2a2a3d; color:#bac2de; }
+    #detail { white-space:normal; }
+    .detail-name { font-size:.95rem; font-weight:700; margin-bottom:4px; }
+    .detail-role { color:var(--muted); font-size:.75rem; margin-bottom:8px; line-height:1.35; }
+    .detail-mode { display:flex; align-items:center; gap:6px; font-size:.78rem; margin-bottom:8px; text-transform:capitalize; }
+    .mode-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; box-shadow:0 0 6px currentColor; }
+    .detail-tags { margin-bottom:10px; }
+    .cap-bars { margin-top:10px; }
+    .cap-row { margin-bottom:10px; }
+    .cap-label { display:flex; justify-content:space-between; font-size:.72rem; color:var(--muted); margin-bottom:3px; }
+    .cap-label b { color:var(--text); font-weight:600; }
+    .cap-track { height:7px; background:#1e1e2e; border-radius:999px; overflow:hidden; border:1px solid #2a2a3d; }
+    .cap-fill { height:100%; border-radius:999px; transition:width .4s ease; }
+    .cap-fill.ram { background:linear-gradient(90deg,#448aff,#82b1ff); }
+    .cap-fill.storage { background:linear-gradient(90deg,#66bb6a,#a5d6a7); }
+    .cap-fill.compute { background:linear-gradient(90deg,#ab47bc,#ce93d8); }
+    .cap-fill.hw { background:linear-gradient(90deg,#ffb74d,#ffe082); opacity:.85; }
+    .cap-source { font-size:.68rem; color:var(--muted); margin-top:8px; font-style:italic; }
+    .cap-score { font-size:.72rem; color:#bac2de; margin-top:6px; }
+    .detail-foot { margin-top:10px; padding-top:8px; border-top:1px solid #2a2a3d; font-size:.72rem; color:var(--muted); line-height:1.45; white-space:pre-wrap; }
+    #viewerBanner { display:none; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:linear-gradient(135deg,rgba(255,213,79,0.18),rgba(255,152,0,0.08)); border:1px solid rgba(255,213,79,0.35); font-size:.78rem; }
+    #viewerBanner b { color:#ffe082; }
+    #haWarning { display:none; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:rgba(243,139,168,0.12); border:1px solid rgba(243,139,168,0.35); font-size:.75rem; color:#f5c2e7; line-height:1.45; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Homelab Network — Space Map</h1>
+      <p id="meta">Loading…</p>
+    </div>
+    <div class="hdr-btns">
+      <button class="secondary" onclick="reloadData()">Refresh data</button>
+      <button class="secondary" onclick="saveLayout()">Save layout</button>
+      <button class="secondary" onclick="releaseAll()">Unpin all</button>
+      <button class="secondary" onclick="resetLayout()">Reset layout</button>
+      <button onclick="toggleAuto()">Auto: <span id="autoState">off</span></button>
+    </div>
+  </header>
+  <div id="wrap">
+    <aside>
+      <div id="haWarning"><b>HA off</b> — phones &amp; tablets won't appear until you add <code>ha-token.local</code> and restart <code>--serve</code>.</div>
+      <div id="viewerBanner"><b>📍 You are here</b> — <span id="viewerLabel">detecting…</span></div>
+      <h2>Selected</h2>
+      <div id="detail">Click a device for details.</div>
+      <div id="err"></div>
+      <h2>Scale legend</h2>
+      <p class="hint">
+        Size = <b>RAM + storage + compute</b><br>
+        <span class="tier">giant</span> top capability (ZBook)<br>
+        <span class="tier">planet</span> Macs · WSL · HA<br>
+        <span class="tier">moon</span> displays · services<br>
+        <span class="tier">asteroid</span> plugs · sensors<br>
+        <span class="tier">hub</span> router — small body, wide orbit rings<br>
+        <span class="hint">Purple tethers = runs inside parent (WSL → ZBook, HA → WSL)</span><br>
+      </p>
+      <h2>Navigation</h2>
+      <p class="hint">
+        <kbd>Drag</kbd> — orbit · <kbd>Scroll</kbd> — zoom<br>
+        <kbd>Right-drag</kbd> — pan · <kbd>Drag node</kbd> — pin<br>
+        <kbd>Double-click</kbd> / <kbd>Right-click node</kbd> — unpin
+      </p>
+      <h2>Link types</h2>
+      <div id="legend"></div>
+    </aside>
+    <div id="g"></div>
+  </div>
+  <script type="application/json" id="network-data">{"generated": "2026-06-07 12:06:57", "scanner": "MF-MAC-905", "scanner_device_id": "mac-primary", "viewer_index": [{"id": "router-gateway", "name": "Router Gateway", "short": "Router", "ips": ["10.0.0.1"]}, {"id": "zbook-wifi", "name": "ZBook Server", "short": "ZBook", "ips": ["10.0.0.169"]}, {"id": "wsl-ubuntu", "name": "WSL Ubuntu", "short": "WSL", "ips": ["172.27.133.182"]}, {"id": "homeassistant", "name": "Home Assistant", "short": "Home Assistant", "ips": ["10.0.0.169"]}, {"id": "minecraft-server", "name": "Minecraft Paper", "short": "Minecraft", "ips": ["10.0.0.169"]}, {"id": "minecraft-phantom", "name": "Phantom Proxy", "short": "Phantom", "ips": ["10.0.0.169"]}, {"id": "mac-primary", "name": "MacBook Pro (This Mac)", "short": "This Mac", "ips": ["10.0.0.227"]}, {"id": "old-macbook", "name": "Old MacBook Pro", "short": "Old Mac", "ips": ["10.0.0.8"]}, {"id": "w09n-frame", "name": "Home Panel Droid", "short": "Home Panel Droid", "ips": ["10.0.0.113"]}, {"id": "chromecast", "name": "Chromecast", "short": "Chromecast", "ips": ["10.0.0.14"]}, {"id": "kitchen-speaker", "name": "Kitchen speaker", "short": "Kitchen speaker", "ips": []}, {"id": "smart-plugs", "name": "Tuya Smart Plugs", "short": "Tuya Plugs", "ips": []}, {"id": "zbook-webcam", "name": "ZBook Basement", "short": "ZBook Basement", "ips": ["172.27.128.1"]}, {"id": "esp-da27ea", "name": "ESP IoT \u00b7 plug", "short": "ESP 105", "ips": ["10.0.0.105"]}, {"id": "wife-iphone", "name": "Stephanie Cl\u00e9roux\u2019s iPhone", "short": "Stephanie Cl\u00e9rou", "ips": ["10.0.0.142"]}, {"id": "esp-18fe85", "name": "ESP IoT \u00b7 LED strip", "short": "ESP 150", "ips": ["10.0.0.150"]}, {"id": "fire-tablet", "name": "Fire Tablet", "short": "Fire tab", "ips": ["10.0.0.182"]}, {"id": "family-ipad", "name": "iPad", "short": "iPad", "ips": ["10.0.0.208"]}, {"id": "lan-device-45", "name": "LAN device \u00b7 45", "short": "45", "ips": ["10.0.0.45"]}, {"id": "smart-fridge", "name": "Smart Refrigerator", "short": "Fridge", "ips": ["10.0.0.87"]}, {"id": "marshall-iphone", "name": "Mashall Spratt\u2019s iPhone", "short": "Mashall Spratt\u2019s", "ips": []}, {"id": "homebase-macbook", "name": "HomeBase_Macbook", "short": "HomeBase_Macbook", "ips": []}], "ha_api": true, "ha_discovered": 5, "arp_discovered": 7, "glances": true, "medium_legend": {"wifi_2g": "Wi-Fi 2.4 GHz", "wifi_5g": "Wi-Fi 5 GHz", "wifi": "Wi-Fi", "ethernet": "Gigabit Ethernet", "docker_bridge": "Docker bridge (WSL2)", "portproxy": "Windows portproxy", "tailscale": "Tailscale overlay", "cloud_api": "Cloud API (Tuya)", "cast": "Google Cast protocol", "rtsp": "RTSP video stream", "http": "HTTP / Web UI", "logical": "Logical / documented link", "bluetooth": "Bluetooth (personal)", "ha_mobile": "Home Assistant app"}, "saved_positions": {}, "layout_seeds": {"router-gateway": [0, 0, 0], "zbook-wifi": [180, 0, 0], "wsl-ubuntu": [232, 0, 0], "homeassistant": [249, 13, 10], "mac-primary": [-160, 100, 50], "old-macbook": [-160, -100, 50], "w09n-frame": [80, 160, -80], "chromecast": [-80, 160, 80], "kitchen-speaker": [-200, 180, 0], "smart-plugs": [-200, -60, 100], "minecraft-server": [204, 13, 12], "minecraft-phantom": [199, -6, -1], "zbook-webcam": [233, -13, -10], "esp-da27ea": [87, 123, 63], "wife-iphone": [-127, 135, 96], "esp-18fe85": [-303, 41, 98], "fire-tablet": [-286, -109, 60], "family-ipad": [-43, -210, -11], "lan-device-45": [282, -171, -92], "smart-fridge": [240, 2, -80], "marshall-iphone": [179, 116, -92], "homebase-macbook": [-45, 170, -69]}, "orbit_hubs": ["router-gateway", "zbook-wifi"], "nodes": [{"id": "router-gateway", "label": "Router Gateway", "shortName": "Router", "group": "network", "status": "online", "mode": "active", "tier": "hub", "personality": "hub", "title": "Router Gateway\\nGateway \u00b7 DHCP \u00b7 NAT\\nGateway SoC \u00b7 NAT/DHCP only\\nCapability score: 3.7 / 82.7\\nRAM 0.25 GB \u00b7 Storage 0.064 GB \u00b7 Compute 8%\\nReachable: online \u00b7 Mode: active\\nPing: 5.0 ms\\n10.0.0.1", "color": "#fab387", "border": "#a6e3a1", "val": 4.4, "capability": 3.7, "capability_pct": 4, "ram_gb": 0.25, "storage_gb": 0.064, "compute": 0.08, "labelSize": 4.8, "glow": 0.34, "pulse": "strong", "metrics": {"ram_gb": 0.25, "storage_gb": 0.064, "compute_hw": 0.08, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.1"], "discovered": false, "runs_on": null, "nest_label": null}, {"id": "zbook-wifi", "label": "ZBook Server", "shortName": "ZBook", "group": "server", "status": "online", "mode": "active", "tier": "giant", "personality": "workhorse", "title": "ZBook Server\\nHome lab host (Windows + WSL2)\\nHP ZBook \u00b7 Windows + WSL homelab host\\nCapability score: 82.7 / 82.7\\nRAM 32 GB \u00b7 Storage 1024 GB \u00b7 Compute 100%\\nReachable: online \u00b7 Mode: active\\nPing: 5.0 ms\\n10.0.0.169\\nLive: RAM use 52.8% \u00b7 Disk 0.9% \u00b7 CPU load 1.5% (glances:4)", "color": "#89b4fa", "border": "#a6e3a1", "val": 21.0, "capability": 82.7, "capability_pct": 100, "ram_gb": 32, "storage_gb": 1024, "compute": 1.0, "labelSize": 8.4, "glow": 0.85, "pulse": "strong", "metrics": {"ram_gb": 32, "storage_gb": 1024, "compute_hw": 1.0, "ram_used_pct": 52.8, "storage_used_pct": 0.9, "cpu_load_pct": 1.5, "source": "glances:4"}, "ips": ["10.0.0.169"], "discovered": false, "runs_on": null, "nest_label": null}, {"id": "wsl-ubuntu", "label": "WSL Ubuntu", "shortName": "WSL", "group": "compute", "status": "online", "mode": "active", "tier": "planet", "personality": "engine", "title": "WSL Ubuntu\\nDocker engine on ZBook\\nRuns on: ZBook\\nDocker VM \u00b7 shares ZBook silicon\\nCapability score: 61.8 / 82.7\\nRAM 16 GB \u00b7 Storage 400 GB \u00b7 Compute 82%\\nReachable: online \u00b7 Mode: active\\n172.27.133.182\\nLive: RAM use 52.8% \u00b7 Disk 0.9% \u00b7 CPU load 1.5% (glances:4)", "color": "#74c7ec", "border": "#a6e3a1", "val": 17.2, "capability": 61.8, "capability_pct": 75, "ram_gb": 16, "storage_gb": 400, "compute": 0.82, "labelSize": 7.6, "glow": 0.51, "pulse": "strong", "metrics": {"ram_gb": 16, "storage_gb": 400, "compute_hw": 0.82, "ram_used_pct": 52.8, "storage_used_pct": 0.9, "cpu_load_pct": 1.5, "source": "glances:4"}, "ips": ["172.27.133.182"], "discovered": false, "runs_on": "zbook-wifi", "nest_label": "ZBook"}, {"id": "homeassistant", "label": "Home Assistant", "shortName": "Home Assistant", "group": "service", "status": "online", "mode": "active", "tier": "moon", "personality": "service", "title": "Home Assistant\\nAutomation hub \u00b7 Docker container\\nRuns on: ZBook \u2192 WSL\\nAutomation container \u00b7 always-on hub\\nCapability score: 29.9 / 82.7\\nRAM 4 GB \u00b7 Storage 32 GB \u00b7 Compute 35%\\nReachable: online \u00b7 Mode: active\\nPing: 24.6 ms\\n10.0.0.169\\nLive: RAM use 9.3% \u00b7 CPU load 0.0% (glances:container:homeassistant)", "color": "#cba6f7", "border": "#a6e3a1", "val": 10.8, "capability": 29.9, "capability_pct": 36, "ram_gb": 4, "storage_gb": 32, "compute": 0.35, "labelSize": 6.2, "glow": 0.28, "pulse": "strong", "metrics": {"ram_gb": 4, "storage_gb": 32, "compute_hw": 0.35, "ram_used_pct": 9.3, "storage_used_pct": null, "cpu_load_pct": 0.0, "source": "glances:container:homeassistant"}, "ips": ["10.0.0.169"], "discovered": false, "runs_on": "wsl-ubuntu", "nest_label": "ZBook \u2192 WSL"}, {"id": "minecraft-server", "label": "Minecraft Paper", "shortName": "Minecraft", "group": "service", "status": "online", "mode": "standby", "tier": "moon", "personality": "service", "title": "Minecraft Paper\\nJava + Bedrock cross-play \u00b7 Docker\\nRuns on: ZBook \u2192 WSL\\nPaper + Geyser \u00b7 2 GB heap\\nCapability score: 25.8 / 82.7\\nRAM 2 GB \u00b7 Storage 24 GB \u00b7 Compute 40%\\nReachable: online \u00b7 Mode: standby\\nPing: 40.0 ms\\n10.0.0.169\\nLive: RAM use 33.6% \u00b7 CPU load 2.5% (glances:container:minecraft_server)", "color": "#cba6f7", "border": "#f9e2af", "val": 9.9, "capability": 25.8, "capability_pct": 31, "ram_gb": 2, "storage_gb": 24, "compute": 0.4, "labelSize": 6.0, "glow": 0.3, "pulse": "soft", "metrics": {"ram_gb": 2, "storage_gb": 24, "compute_hw": 0.4, "ram_used_pct": 33.6, "storage_used_pct": null, "cpu_load_pct": 2.5, "source": "glances:container:minecraft_server"}, "ips": ["10.0.0.169"], "discovered": false, "runs_on": "wsl-ubuntu", "nest_label": "ZBook \u2192 WSL"}, {"id": "minecraft-phantom", "label": "Phantom Proxy", "shortName": "Phantom", "group": "service", "status": "online", "mode": "standby", "tier": "asteroid", "personality": "beacon", "title": "Phantom Proxy\\nXbox LAN discovery beacon \u00b7 Docker host net\\nRuns on: ZBook \u2192 WSL\\nUDP LAN discovery proxy\\nCapability score: 2.7 / 82.7\\nRAM 0.128 GB \u00b7 Storage 0.01 GB \u00b7 Compute 6%\\nReachable: online \u00b7 Mode: standby\\nPing: 39.9 ms\\n10.0.0.169", "color": "#cba6f7", "border": "#f9e2af", "val": 4.1, "capability": 2.7, "capability_pct": 3, "ram_gb": 0.128, "storage_gb": 0.01, "compute": 0.06, "labelSize": 4.7, "glow": 0.13, "pulse": "soft", "metrics": {"ram_gb": 0.128, "storage_gb": 0.01, "compute_hw": 0.06, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.169"], "discovered": false, "runs_on": "wsl-ubuntu", "nest_label": "ZBook \u2192 WSL"}, {"id": "mac-primary", "label": "MacBook Pro (This Mac)", "shortName": "This Mac", "group": "client", "status": "online", "mode": "active", "tier": "planet", "personality": "edge", "title": "MacBook Pro (This Mac)\\nDaily driver \u00b7 mf-mac-905\\nMF-MAC-905 daily driver\\nCapability score: 62.3 / 82.7\\nRAM 16 GB \u00b7 Storage 512 GB \u00b7 Compute 78%\\nReachable: online \u00b7 Mode: active\\nPing: 0.3 ms\\n10.0.0.227\\nLive: RAM use 95.8% \u00b7 Disk 5.0% \u00b7 CPU load 34.6% (local)", "color": "#94e2d5", "border": "#a6e3a1", "val": 17.3, "capability": 62.3, "capability_pct": 75, "ram_gb": 16, "storage_gb": 512, "compute": 0.78, "labelSize": 7.6, "glow": 0.53, "pulse": "strong", "metrics": {"ram_gb": 16, "storage_gb": 512, "compute_hw": 0.78, "ram_used_pct": 95.8, "storage_used_pct": 5.0, "cpu_load_pct": 34.6, "source": "local"}, "ips": ["10.0.0.227"], "discovered": false, "runs_on": null, "nest_label": null}, {"id": "old-macbook", "label": "Old MacBook Pro", "shortName": "Old Mac", "group": "client", "status": "online", "mode": "active", "tier": "planet", "personality": "edge", "title": "Old MacBook Pro\\nFamily workstation\\nLegacy family Mac\\nCapability score: 45.6 / 82.7\\nRAM 8 GB \u00b7 Storage 256 GB \u00b7 Compute 45%\\nReachable: online \u00b7 Mode: active\\nPing: 176.2 ms\\n10.0.0.8", "color": "#94e2d5", "border": "#a6e3a1", "val": 14.1, "capability": 45.6, "capability_pct": 55, "ram_gb": 8, "storage_gb": 256, "compute": 0.45, "labelSize": 6.9, "glow": 0.33, "pulse": "strong", "metrics": {"ram_gb": 8, "storage_gb": 256, "compute_hw": 0.45, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.8"], "discovered": false, "runs_on": null, "nest_label": null}, {"id": "w09n-frame", "label": "Home Panel Droid", "shortName": "Home Panel Droid", "group": "iot", "status": "online", "mode": "active", "tier": "asteroid", "personality": "display", "title": "Home Panel Droid\\nHA kiosk display\\nAndroid 4.4 kiosk panel\\nCapability score: 11.2 / 82.7\\nRAM 0.5 GB \u00b7 Storage 4 GB \u00b7 Compute 10%\\nReachable: online \u00b7 Mode: active\\nPing: 66.7 ms\\ndevice_tracker.home_panel_droid: home\\n10.0.0.113", "color": "#f9e2af", "border": "#a6e3a1", "val": 6.5, "capability": 11.2, "capability_pct": 14, "ram_gb": 0.5, "storage_gb": 4, "compute": 0.1, "labelSize": 5.2, "glow": 0.15, "pulse": "strong", "metrics": {"ram_gb": 0.5, "storage_gb": 4, "compute_hw": 0.1, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.113"], "discovered": false, "runs_on": null, "nest_label": null}, {"id": "chromecast", "label": "Chromecast", "shortName": "Chromecast", "group": "iot", "status": "online", "mode": "active", "tier": "asteroid", "personality": "sensor", "title": "Chromecast\\nCast target\\nCast receiver\\nCapability score: 5.7 / 82.7\\nRAM 0.256 GB \u00b7 Storage 0.5 GB \u00b7 Compute 12%\\nReachable: online \u00b7 Mode: active\\nPing: 32.1 ms\\n10.0.0.14", "color": "#f9e2af", "border": "#a6e3a1", "val": 5.0, "capability": 5.7, "capability_pct": 7, "ram_gb": 0.256, "storage_gb": 0.5, "compute": 0.12, "labelSize": 4.9, "glow": 0.16, "pulse": "strong", "metrics": {"ram_gb": 0.256, "storage_gb": 0.5, "compute_hw": 0.12, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.14"], "discovered": false, "runs_on": null, "nest_label": null}, {"id": "kitchen-speaker", "label": "Kitchen speaker", "shortName": "Kitchen speaker", "group": "iot", "status": "unknown", "mode": "unknown", "tier": "asteroid", "personality": "sensor", "title": "Kitchen speaker\\nCast media \u00b7 Robot Intercom TTS\\nCast speaker endpoint\\nCapability score: 3.1 / 82.7\\nRAM 0.128 GB \u00b7 Storage 0.05 GB \u00b7 Compute 8%\\nReachable: unknown \u00b7 Mode: unknown\\nKitchen Speaker: off", "color": "#f9e2af", "border": "#6c7086", "val": 4.2, "capability": 3.1, "capability_pct": 4, "ram_gb": 0.128, "storage_gb": 0.05, "compute": 0.08, "labelSize": 4.7, "glow": 0.14, "pulse": "off", "metrics": {"ram_gb": 0.128, "storage_gb": 0.05, "compute_hw": 0.08, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": [], "discovered": false, "runs_on": null, "nest_label": null}, {"id": "smart-plugs", "label": "Tuya Smart Plugs", "shortName": "Tuya Plugs", "group": "iot", "status": "unknown", "mode": "unknown", "tier": "asteroid", "personality": "sensor", "title": "Tuya Smart Plugs\\nPower control (cloud + local)\\nMCU \u00b7 3\u00d7 Wi-Fi switches\\nCapability score: 1.8 / 82.7\\nRAM 0.016 GB \u00b7 Storage 0.008 GB \u00b7 Compute 3%\\nReachable: unknown \u00b7 Mode: unknown\\nPlug 1 \u00b7 Desk: unavailable; Plug 2 \u00b7 Shed: off; Plug 3 \u00b7 Command Central: on", "color": "#f9e2af", "border": "#6c7086", "val": 3.8, "capability": 1.8, "capability_pct": 2, "ram_gb": 0.016, "storage_gb": 0.008, "compute": 0.03, "labelSize": 4.6, "glow": 0.12, "pulse": "off", "metrics": {"ram_gb": 0.016, "storage_gb": 0.008, "compute_hw": 0.03, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": [], "discovered": false, "runs_on": null, "nest_label": null}, {"id": "zbook-webcam", "label": "ZBook Basement", "shortName": "ZBook Basement", "group": "iot", "status": "online", "mode": "active", "tier": "asteroid", "personality": "sensor", "title": "ZBook Basement\\nBasement camera feed \u00b7 go2rtc in WSL\\nRuns on: ZBook \u2192 WSL\\nRTSP stream via go2rtc\\nCapability score: 4.4 / 82.7\\nRAM 0.064 GB \u00b7 Storage 0.25 GB \u00b7 Compute 14%\\nReachable: online \u00b7 Mode: active\\nBasement Webcam: idle\\n172.27.128.1", "color": "#f9e2af", "border": "#a6e3a1", "val": 4.6, "capability": 4.4, "capability_pct": 5, "ram_gb": 0.064, "storage_gb": 0.25, "compute": 0.14, "labelSize": 4.8, "glow": 0.17, "pulse": "strong", "metrics": {"ram_gb": 0.064, "storage_gb": 0.25, "compute_hw": 0.14, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["172.27.128.1"], "discovered": false, "runs_on": "wsl-ubuntu", "nest_label": "ZBook \u2192 WSL"}, {"id": "esp-da27ea", "label": "ESP IoT \u00b7 plug", "shortName": "ESP 105", "group": "client", "status": "online", "mode": "active", "tier": "asteroid", "personality": "sensor", "title": "ESP IoT \u00b7 plug\\nKnown LAN client\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 69.9 ms\\n10.0.0.105", "color": "#94e2d5", "border": "#a6e3a1", "val": 5.9, "capability": 8.8, "capability_pct": 11, "ram_gb": 0.5, "storage_gb": 1, "compute": 0.2, "labelSize": 5.1, "glow": 0.18, "pulse": "strong", "metrics": {"ram_gb": 0.5, "storage_gb": 1, "compute_hw": 0.2, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.105"], "discovered": true, "runs_on": null, "nest_label": null}, {"id": "wife-iphone", "label": "Stephanie Cl\u00e9roux\u2019s iPhone", "shortName": "Stephanie Cl\u00e9rou", "group": "client", "status": "offline", "mode": "offline", "tier": "asteroid", "personality": "edge", "title": "Stephanie Cl\u00e9roux\u2019s iPhone\\nHelix: iPhone \u00b7 active on 5 GHz\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\ndevice_tracker.stephanie_clerouxs_iphone: home\\n10.0.0.142", "color": "#94e2d5", "border": "#f38ba8", "val": 5.9, "capability": 8.8, "capability_pct": 11, "ram_gb": 0.5, "storage_gb": 1, "compute": 0.2, "labelSize": 5.1, "glow": 0.2, "pulse": "off", "metrics": {"ram_gb": 0.5, "storage_gb": 1, "compute_hw": 0.2, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.142"], "discovered": true, "runs_on": null, "nest_label": null}, {"id": "esp-18fe85", "label": "ESP IoT \u00b7 LED strip", "shortName": "ESP 150", "group": "client", "status": "online", "mode": "active", "tier": "asteroid", "personality": "sensor", "title": "ESP IoT \u00b7 LED strip\\nKnown LAN client\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 10.3 ms\\n10.0.0.150", "color": "#94e2d5", "border": "#a6e3a1", "val": 5.9, "capability": 8.8, "capability_pct": 11, "ram_gb": 0.5, "storage_gb": 1, "compute": 0.2, "labelSize": 5.1, "glow": 0.18, "pulse": "strong", "metrics": {"ram_gb": 0.5, "storage_gb": 1, "compute_hw": 0.2, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.150"], "discovered": true, "runs_on": null, "nest_label": null}, {"id": "fire-tablet", "label": "Fire Tablet", "shortName": "Fire tab", "group": "client", "status": "online", "mode": "active", "tier": "asteroid", "personality": "edge", "title": "Fire Tablet\\nHelix: android-2b5944\u2026 \u00b7 Amazon Fire\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 117.9 ms\\n10.0.0.182", "color": "#94e2d5", "border": "#a6e3a1", "val": 5.9, "capability": 8.8, "capability_pct": 11, "ram_gb": 0.5, "storage_gb": 1, "compute": 0.2, "labelSize": 5.1, "glow": 0.2, "pulse": "strong", "metrics": {"ram_gb": 0.5, "storage_gb": 1, "compute_hw": 0.2, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.182"], "discovered": true, "runs_on": null, "nest_label": null}, {"id": "family-ipad", "label": "iPad", "shortName": "iPad", "group": "client", "status": "online", "mode": "unknown", "tier": "asteroid", "personality": "edge", "title": "iPad\\nHelix: iPad \u00b7 active on 5 GHz\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: unknown\\nPing: 680.0 ms\\ndevice_tracker.ipad: unknown\\n10.0.0.208", "color": "#94e2d5", "border": "#6c7086", "val": 5.9, "capability": 8.8, "capability_pct": 11, "ram_gb": 0.5, "storage_gb": 1, "compute": 0.2, "labelSize": 5.1, "glow": 0.2, "pulse": "off", "metrics": {"ram_gb": 0.5, "storage_gb": 1, "compute_hw": 0.2, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.208"], "discovered": true, "runs_on": null, "nest_label": null}, {"id": "lan-device-45", "label": "LAN device \u00b7 45", "shortName": "45", "group": "client", "status": "online", "mode": "active", "tier": "asteroid", "personality": "sensor", "title": "LAN device \u00b7 45\\nUnidentified \u00b7 check Helix for CT-bulb or QCA4002\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 16.2 ms\\n10.0.0.45", "color": "#94e2d5", "border": "#a6e3a1", "val": 5.9, "capability": 8.8, "capability_pct": 11, "ram_gb": 0.5, "storage_gb": 1, "compute": 0.2, "labelSize": 5.1, "glow": 0.18, "pulse": "strong", "metrics": {"ram_gb": 0.5, "storage_gb": 1, "compute_hw": 0.2, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.45"], "discovered": true, "runs_on": null, "nest_label": null}, {"id": "smart-fridge", "label": "Smart Refrigerator", "shortName": "Fridge", "group": "client", "status": "online", "mode": "active", "tier": "asteroid", "personality": "sensor", "title": "Smart Refrigerator\\nHelix: refrigerator\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 46.3 ms\\n10.0.0.87", "color": "#94e2d5", "border": "#a6e3a1", "val": 5.9, "capability": 8.8, "capability_pct": 11, "ram_gb": 0.5, "storage_gb": 1, "compute": 0.2, "labelSize": 5.1, "glow": 0.18, "pulse": "strong", "metrics": {"ram_gb": 0.5, "storage_gb": 1, "compute_hw": 0.2, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": ["10.0.0.87"], "discovered": true, "runs_on": null, "nest_label": null}, {"id": "marshall-iphone", "label": "Mashall Spratt\u2019s iPhone", "shortName": "Mashall Spratt\u2019s", "group": "client", "status": "unknown", "mode": "unknown", "tier": "asteroid", "personality": "edge", "title": "Mashall Spratt\u2019s iPhone\\nMobile / tablet \u00b7 Home Assistant tracker\\nHA tracker \u00b7 home\\nCapability score: 4.2 / 82.7\\nRAM 0.064 GB \u00b7 Storage 0.256 GB \u00b7 Compute 12%\\nReachable: unknown \u00b7 Mode: unknown\\ndevice_tracker.mashall_spratts_iphone: home", "color": "#94e2d5", "border": "#6c7086", "val": 4.6, "capability": 4.2, "capability_pct": 5, "ram_gb": 0.064, "storage_gb": 0.256, "compute": 0.12, "labelSize": 4.8, "glow": 0.16, "pulse": "off", "metrics": {"ram_gb": 0.064, "storage_gb": 0.256, "compute_hw": 0.12, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": [], "discovered": true, "runs_on": null, "nest_label": null}, {"id": "homebase-macbook", "label": "HomeBase_Macbook", "shortName": "HomeBase_Macbook", "group": "client", "status": "unknown", "mode": "unknown", "tier": "asteroid", "personality": "edge", "title": "HomeBase_Macbook\\nMobile / tablet \u00b7 Home Assistant tracker\\nHA tracker \u00b7 home\\nCapability score: 4.2 / 82.7\\nRAM 0.064 GB \u00b7 Storage 0.256 GB \u00b7 Compute 12%\\nReachable: unknown \u00b7 Mode: unknown\\ndevice_tracker.homebase_macbook: home", "color": "#94e2d5", "border": "#6c7086", "val": 4.6, "capability": 4.2, "capability_pct": 5, "ram_gb": 0.064, "storage_gb": 0.256, "compute": 0.12, "labelSize": 4.8, "glow": 0.16, "pulse": "off", "metrics": {"ram_gb": 0.064, "storage_gb": 0.256, "compute_hw": 0.12, "ram_used_pct": null, "storage_used_pct": null, "cpu_load_pct": null, "source": "static"}, "ips": [], "discovered": true, "runs_on": null, "nest_label": null}], "edges": [{"id": "e0", "source": "router-gateway", "target": "zbook-wifi", "from": "router-gateway", "to": "zbook-wifi", "medium": "wifi_5g", "label": "Wi-Fi 5 GHz \u00b7 5.0ms \u00b7 up", "title": "ZBook wireless uplink", "color": "#ffb74d", "width": 2, "directed": false}, {"id": "e1", "source": "router-gateway", "target": "mac-primary", "from": "router-gateway", "to": "mac-primary", "medium": "wifi", "label": "Wi-Fi \u00b7 2.6ms \u00b7 up", "title": "Daily driver Mac", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e2", "source": "router-gateway", "target": "old-macbook", "from": "router-gateway", "to": "old-macbook", "medium": "wifi", "label": "Wi-Fi \u00b7 90.6ms \u00b7 up", "title": "Family Mac", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e3", "source": "router-gateway", "target": "w09n-frame", "from": "router-gateway", "to": "w09n-frame", "medium": "wifi_2g", "label": "Wi-Fi 2.4 GHz \u00b7 35.9ms \u00b7 up", "title": "Frame on 2.4 GHz SSID", "color": "#f9a825", "width": 2, "directed": false}, {"id": "e4", "source": "router-gateway", "target": "chromecast", "from": "router-gateway", "to": "chromecast", "medium": "wifi", "label": "Wi-Fi \u00b7 18.6ms \u00b7 up", "title": "Cast discovery", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e5", "source": "router-gateway", "target": "smart-plugs", "from": "router-gateway", "to": "smart-plugs", "medium": "wifi_2g", "label": "Wi-Fi 2.4 GHz \u00b7 5.0ms \u00b7 degraded", "title": "Tuya Wi-Fi plugs", "color": "#fab387", "width": 1, "directed": false}, {"id": "e6", "source": "zbook-wifi", "target": "wsl-ubuntu", "from": "zbook-wifi", "to": "wsl-ubuntu", "medium": "docker_bridge", "label": "Docker bridge (WSL2) \u00b7 up", "title": "Hyper-V virtual switch", "color": "#ce93d8", "width": 2, "directed": false}, {"id": "e7", "source": "zbook-wifi", "target": "homeassistant", "from": "zbook-wifi", "to": "homeassistant", "medium": "portproxy", "label": "Windows portproxy \u00b7 up", "title": ":8123 LAN bridge", "color": "#4dd0e1", "width": 2, "directed": false}, {"id": "e8", "source": "wsl-ubuntu", "target": "homeassistant", "from": "wsl-ubuntu", "to": "homeassistant", "medium": "docker_bridge", "label": "Docker bridge (WSL2) \u00b7 up", "title": "HA container bind mount", "color": "#ce93d8", "width": 2, "directed": false}, {"id": "e9", "source": "wsl-ubuntu", "target": "minecraft-server", "from": "wsl-ubuntu", "to": "minecraft-server", "medium": "docker_bridge", "label": "Docker bridge (WSL2) \u00b7 up", "title": "Paper server container", "color": "#ce93d8", "width": 2, "directed": false}, {"id": "e10", "source": "wsl-ubuntu", "target": "minecraft-phantom", "from": "wsl-ubuntu", "to": "minecraft-phantom", "medium": "docker_bridge", "label": "Docker bridge (WSL2) \u00b7 up", "title": "Host-network phantom", "color": "#ce93d8", "width": 2, "directed": false}, {"id": "e11", "source": "minecraft-server", "target": "minecraft-phantom", "from": "minecraft-server", "to": "minecraft-phantom", "medium": "logical", "label": "Logical / documented link \u00b7 up", "title": "Geyser backend :19133", "color": "#78909c", "width": 2, "directed": false}, {"id": "e12", "source": "mac-primary", "target": "zbook-wifi", "from": "mac-primary", "to": "zbook-wifi", "medium": "wifi", "label": "Wi-Fi \u00b7 2.6ms \u00b7 up", "title": "SSH \u00b7 SMB \u00b7 HA UI", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e13", "source": "mac-primary", "target": "homeassistant", "from": "mac-primary", "to": "homeassistant", "medium": "http", "label": "HTTP / Web UI \u00b7 12.5ms \u00b7 up", "title": "Dashboard \u00b7 Obsidian refresh", "color": "#ba68c8", "width": 2, "directed": false}, {"id": "e14", "source": "mac-primary", "target": "zbook-wifi", "from": "mac-primary", "to": "zbook-wifi", "medium": "tailscale", "label": "Tailscale overlay \u00b7 2.6ms \u00b7 up", "title": "Remote access overlay", "color": "#81c784", "width": 2, "directed": false}, {"id": "e15", "source": "old-macbook", "target": "zbook-wifi", "from": "old-macbook", "to": "zbook-wifi", "medium": "wifi", "label": "Wi-Fi \u00b7 90.6ms \u00b7 up", "title": "LAN file share", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e16", "source": "w09n-frame", "target": "homeassistant", "from": "w09n-frame", "to": "homeassistant", "medium": "http", "label": "HTTP / Web UI \u00b7 45.7ms \u00b7 up", "title": "Loads /frame-panel tiles", "color": "#ba68c8", "width": 2, "directed": true}, {"id": "e17", "source": "w09n-frame", "target": "zbook-wifi", "from": "w09n-frame", "to": "zbook-wifi", "medium": "wifi_2g", "label": "Wi-Fi 2.4 GHz \u00b7 35.9ms \u00b7 up", "title": "HTTP to HA portproxy", "color": "#f9a825", "width": 2, "directed": true}, {"id": "e18", "source": "homeassistant", "target": "kitchen-speaker", "from": "homeassistant", "to": "kitchen-speaker", "medium": "cast", "label": "Google Cast protocol \u00b7 24.6ms \u00b7 degraded", "title": "TTS \u00b7 media control", "color": "#fab387", "width": 1, "directed": true}, {"id": "e19", "source": "homeassistant", "target": "smart-plugs", "from": "homeassistant", "to": "smart-plugs", "medium": "cloud_api", "label": "Cloud API (Tuya) \u00b7 24.6ms \u00b7 degraded", "title": "Tuya integration", "color": "#fab387", "width": 1, "directed": true}, {"id": "e20", "source": "homeassistant", "target": "chromecast", "from": "homeassistant", "to": "chromecast", "medium": "cast", "label": "Google Cast protocol \u00b7 28.4ms \u00b7 up", "title": "Cast discovery", "color": "#fff176", "width": 2, "directed": true}, {"id": "e21", "source": "chromecast", "target": "kitchen-speaker", "from": "chromecast", "to": "kitchen-speaker", "medium": "cast", "label": "Google Cast protocol \u00b7 32.1ms \u00b7 degraded", "title": "Speaker group / Cast route", "color": "#fab387", "width": 1, "directed": true}, {"id": "e22", "source": "zbook-webcam", "target": "homeassistant", "from": "zbook-webcam", "to": "homeassistant", "medium": "rtsp", "label": "RTSP video stream \u00b7 24.6ms \u00b7 up", "title": "Camera stream to HA", "color": "#ef5350", "width": 2, "directed": false}, {"id": "e23", "source": "zbook-webcam", "target": "wsl-ubuntu", "from": "zbook-webcam", "to": "wsl-ubuntu", "medium": "docker_bridge", "label": "Docker bridge (WSL2) \u00b7 up", "title": "go2rtc in WSL", "color": "#ce93d8", "width": 2, "directed": false}, {"id": "e24", "source": "zbook-webcam", "target": "zbook-wifi", "from": "zbook-webcam", "to": "zbook-wifi", "medium": "logical", "label": "Logical / documented link \u00b7 up", "title": "Host camera passthrough", "color": "#78909c", "width": 2, "directed": false}, {"id": "e25", "source": "router-gateway", "target": "esp-da27ea", "from": "router-gateway", "to": "esp-da27ea", "medium": "wifi", "label": "Wi-Fi \u00b7 37.5ms \u00b7 up", "title": "LAN ARP discovery", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e26", "source": "router-gateway", "target": "wife-iphone", "from": "router-gateway", "to": "wife-iphone", "medium": "wifi", "label": "Wi-Fi \u00b7 5.0ms \u00b7 degraded", "title": "LAN ARP discovery", "color": "#fab387", "width": 1, "directed": false}, {"id": "e27", "source": "router-gateway", "target": "esp-18fe85", "from": "router-gateway", "to": "esp-18fe85", "medium": "wifi", "label": "Wi-Fi \u00b7 7.7ms \u00b7 up", "title": "LAN ARP discovery", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e28", "source": "router-gateway", "target": "fire-tablet", "from": "router-gateway", "to": "fire-tablet", "medium": "wifi", "label": "Wi-Fi \u00b7 61.5ms \u00b7 up", "title": "LAN ARP discovery", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e29", "source": "router-gateway", "target": "family-ipad", "from": "router-gateway", "to": "family-ipad", "medium": "wifi", "label": "Wi-Fi \u00b7 342.5ms \u00b7 up", "title": "LAN ARP discovery", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e30", "source": "router-gateway", "target": "lan-device-45", "from": "router-gateway", "to": "lan-device-45", "medium": "wifi", "label": "Wi-Fi \u00b7 10.6ms \u00b7 up", "title": "LAN ARP discovery", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e31", "source": "router-gateway", "target": "smart-fridge", "from": "router-gateway", "to": "smart-fridge", "medium": "wifi", "label": "Wi-Fi \u00b7 25.6ms \u00b7 up", "title": "LAN ARP discovery", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e32", "source": "router-gateway", "target": "homeassistant", "from": "router-gateway", "to": "homeassistant", "medium": "wifi", "label": "Wi-Fi \u00b7 14.8ms \u00b7 up", "title": "Helix / LAN Wi\u2011Fi", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e33", "source": "router-gateway", "target": "minecraft-server", "from": "router-gateway", "to": "minecraft-server", "medium": "wifi", "label": "Wi-Fi \u00b7 22.5ms \u00b7 up", "title": "Helix / LAN Wi\u2011Fi", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e34", "source": "router-gateway", "target": "minecraft-phantom", "from": "router-gateway", "to": "minecraft-phantom", "medium": "wifi", "label": "Wi-Fi \u00b7 22.4ms \u00b7 up", "title": "Helix / LAN Wi\u2011Fi", "color": "#ffcc80", "width": 2, "directed": false}, {"id": "e35", "source": "homeassistant", "target": "w09n-frame", "from": "homeassistant", "to": "w09n-frame", "medium": "ha_mobile", "label": "Home Assistant app \u00b7 45.7ms \u00b7 up", "title": "HA Companion \u00b7 home", "color": "#26a69a", "width": 2, "directed": false}, {"id": "e36", "source": "homeassistant", "target": "wife-iphone", "from": "homeassistant", "to": "wife-iphone", "medium": "ha_mobile", "label": "Home Assistant app \u00b7 24.6ms \u00b7 degraded", "title": "HA Companion \u00b7 home", "color": "#fab387", "width": 1, "directed": false}, {"id": "e37", "source": "homeassistant", "target": "family-ipad", "from": "homeassistant", "to": "family-ipad", "medium": "ha_mobile", "label": "Home Assistant app \u00b7 352.3ms \u00b7 up", "title": "HA Companion \u00b7 unknown", "color": "#26a69a", "width": 2, "directed": false}, {"id": "e38", "source": "homeassistant", "target": "marshall-iphone", "from": "homeassistant", "to": "marshall-iphone", "medium": "ha_mobile", "label": "Home Assistant app \u00b7 24.6ms \u00b7 degraded", "title": "HA Companion \u00b7 home", "color": "#fab387", "width": 1, "directed": false}, {"id": "e39", "source": "homeassistant", "target": "homebase-macbook", "from": "homeassistant", "to": "homebase-macbook", "medium": "ha_mobile", "label": "Home Assistant app \u00b7 24.6ms \u00b7 degraded", "title": "HA Companion \u00b7 home", "color": "#fab387", "width": 1, "directed": false}]}</script>
+  <script>
+    var graph = null, raw = null, gData = null, autoTimer = null;
+    var REFRESH_SEC = 30, LS_KEY = 'homelab-node-positions-v2';
+    var lastClick = { id: null, t: 0 };
+    var starField = null, orbitGroup = null, nestTetherGroup = null, viewerPinGroup = null;
+    var labelSprites = [], nodeVisuals = {};
+    var pulseClock = 0;
+    var viewerDeviceId = null, viewerDeviceName = null;
+
+    function showError(msg) {
+      document.getElementById('err').style.display = 'block';
+      document.getElementById('err').textContent = msg;
+    }
+
+    function readEmbedded() {
+      var el = document.getElementById('network-data');
+      if (!el || !el.textContent.trim()) return null;
+      try { return JSON.parse(el.textContent); }
+      catch (e) { showError('Bad JSON: ' + e.message); return null; }
+    }
+
+    function getSavedPositions(api) {
+      try {
+        var ls = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        if (Object.keys(ls).length) return ls;
+      } catch (e) {}
+      return api.saved_positions || {};
+    }
+
+    function posObj(p) {
+      if (!p) return null;
+      if (Array.isArray(p)) return { x: p[0], y: p[1], z: p[2] };
+      return p;
+    }
+
+    function nodeRadius(n) { return Math.pow(n.val || 5, 0.55) * 2.8; }
+
+    function fmtGb(n) {
+      if (n == null || isNaN(n)) return '—';
+      return (n >= 10 ? Math.round(n) : Number(n).toFixed(1)) + ' GB';
+    }
+
+    function barFillClass(kind, pct) {
+      if (pct == null || isNaN(pct)) return 0;
+      return Math.max(0, Math.min(100, pct));
+    }
+
+    function updateViewerBanner() {
+      var banner = document.getElementById('viewerBanner');
+      var label = document.getElementById('viewerLabel');
+      var haWarn = document.getElementById('haWarning');
+      if (haWarn) haWarn.style.display = (raw && raw.ha_api) ? 'none' : 'block';
+      if (viewerDeviceId && viewerDeviceName) {
+        banner.style.display = 'block';
+        label.textContent = viewerDeviceName;
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    async function fetchViewer(api) {
+      viewerDeviceId = null;
+      viewerDeviceName = null;
+      try {
+        var res = await fetch('/api/viewer?t=' + Date.now());
+        if (res.ok) {
+          var v = await res.json();
+          if (v.device_id) {
+            viewerDeviceId = v.device_id;
+            viewerDeviceName = v.device_name || v.device_id;
+            return;
+          }
+        }
+      } catch (e) {}
+      if (api && api.scanner_device_id) {
+        viewerDeviceId = api.scanner_device_id;
+        var node = (api.nodes || []).find(function(n) { return n.id === viewerDeviceId; });
+        viewerDeviceName = node ? (node.shortName || node.label) : viewerDeviceId;
+      }
+    }
+
+    function renderDetail(node) {
+      if (!node) {
+        document.getElementById('detail').innerHTML = 'Click a device for details.';
+        return;
+      }
+      var m = node.metrics || {};
+      var hwPct = Math.round((m.compute_hw != null ? m.compute_hw : node.compute || 0) * 100);
+      var capPct = node.capability_pct != null ? node.capability_pct : '—';
+      var html = '';
+      html += '<div class="detail-name">' + (node.shortName || node.name);
+      if (viewerDeviceId && node.id === viewerDeviceId) html += ' <span class="tier">📍 you</span>';
+      html += '</div>';
+      html += '<div class="detail-role">' + ((node.title || '').split('\n')[1] || '');
+      if (node.nest_label) html += '<br><span class="tier">inside ' + node.nest_label + '</span>';
+      html += '</div>';
+      html += '<div class="detail-mode"><span class="mode-dot" style="background:' + (node.border || '#6c7086') + '"></span>' +
+        (node.status || 'unknown') + ' · ' + (node.mode || 'unknown') +
+        (node.pulse === 'strong' ? ' · pulsing' : node.pulse === 'soft' ? ' · idle glow' : '') + '</div>';
+      html += '<div class="detail-tags"><span class="tier">' + (node.personality || 'sensor') + '</span> ' +
+        '<span class="tier">' + (node.tier || 'moon') + '</span> ' +
+        '<span class="tier">' + capPct + '% cap</span></div>';
+      html += '<div class="cap-bars">';
+      html += '<div class="cap-row"><div class="cap-label"><span>RAM</span><span><b>' + fmtGb(m.ram_gb != null ? m.ram_gb : node.ram_gb) +
+        '</b>' + (m.ram_used_pct != null ? ' · ' + m.ram_used_pct + '% used' : '') + '</span></div>' +
+        '<div class="cap-track"><div class="cap-fill ram" style="width:' + barFillClass('ram', m.ram_used_pct) + '%"></div></div></div>';
+      html += '<div class="cap-row"><div class="cap-label"><span>Storage</span><span><b>' + fmtGb(m.storage_gb != null ? m.storage_gb : node.storage_gb) +
+        '</b>' + (m.storage_used_pct != null ? ' · ' + m.storage_used_pct + '% used' : '') + '</span></div>' +
+        '<div class="cap-track"><div class="cap-fill storage" style="width:' + barFillClass('storage', m.storage_used_pct) + '%"></div></div></div>';
+      html += '<div class="cap-row"><div class="cap-label"><span>Compute</span><span><b>' + hwPct + '% hardware</b>' +
+        (m.cpu_load_pct != null ? ' · ' + m.cpu_load_pct + '% load' : '') + '</span></div>' +
+        '<div class="cap-track"><div class="cap-fill compute" style="width:' + barFillClass('compute', m.cpu_load_pct) + '%"></div></div></div>';
+      html += '<div class="cap-row"><div class="cap-label"><span>Map scale</span><span><b>' + capPct + '% of lab</b></span></div>' +
+        '<div class="cap-track"><div class="cap-fill hw" style="width:' + barFillClass('hw', capPct) + '%"></div></div></div>';
+      html += '</div>';
+      if (m.source && m.source !== 'static') html += '<div class="cap-source">Live: ' + m.source + '</div>';
+      html += '<div class="cap-score">Capability score ' + (node.capability != null ? node.capability : '—') + '</div>';
+      var footLines = (node.title || '').split('\n').slice(2);
+      if (footLines.length) html += '<div class="detail-foot">' + footLines.join('\n') + '</div>';
+      document.getElementById('detail').innerHTML = html;
+    }
+
+    function buildGraphData(api) {
+      var saved = getSavedPositions(api);
+      var seeds = api.layout_seeds || {};
+      var nodes = api.nodes.map(function(n) {
+        var node = {
+          id: n.id,
+          name: n.label,
+          shortName: n.shortName || n.label,
+          title: (n.title || '').replace(/\\n/g, '\n'),
+          color: n.color,
+          val: n.val || 5,
+          tier: n.tier || 'moon',
+          personality: n.personality || 'sensor',
+          capability: n.capability || 0,
+          capability_pct: n.capability_pct || 0,
+          ram_gb: n.ram_gb || 0,
+          storage_gb: n.storage_gb || 0,
+          compute: n.compute || 0.2,
+          labelSize: n.labelSize || 4,
+          glow: n.glow != null ? n.glow : 0.15,
+          status: n.status || 'unknown',
+          mode: n.mode || 'unknown',
+          border: n.border || '#6c7086',
+          pulse: n.pulse || 'off',
+          metrics: n.metrics || {
+            ram_gb: n.ram_gb || 0,
+            storage_gb: n.storage_gb || 0,
+            compute_hw: n.compute || 0.2,
+            ram_used_pct: null,
+            storage_used_pct: null,
+            cpu_load_pct: null,
+            source: 'static'
+          },
+          runs_on: n.runs_on || null,
+          nest_label: n.nest_label || null
+        };
+        var p = posObj(saved[n.id] || seeds[n.id]);
+        if (p) {
+          node.x = p.x; node.y = p.y; node.z = p.z;
+          if (saved[n.id]) { node.fx = p.x; node.fy = p.y; node.fz = p.z; }
+        }
+        return node;
+      });
+      var links = api.edges.map(function(e) {
+        return {
+          source: e.source || e.from,
+          target: e.target || e.to,
+          label: e.label,
+          title: e.title,
+          color: typeof e.color === 'string' ? e.color : '#78909c',
+          width: e.width || 1,
+          directed: !!e.directed,
+          medium: e.medium || ''
+        };
+      });
+      return { nodes: nodes, links: links };
+    }
+
+    function sizeGraph() {
+      if (!graph) return;
+      var el = document.getElementById('g');
+      graph.width(el.clientWidth).height(el.clientHeight);
+    }
+
+    function collectPositions() {
+      if (!gData) return {};
+      var out = {};
+      gData.nodes.forEach(function(n) {
+        out[n.id] = { x: n.fx != null ? n.fx : n.x, y: n.fy != null ? n.fy : n.y, z: n.fz != null ? n.fz : n.z };
+      });
+      return out;
+    }
+
+    function saveLayout() {
+      localStorage.setItem(LS_KEY, JSON.stringify(collectPositions()));
+      fetch('/api/positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(collectPositions()) }).catch(function(){});
+    }
+
+    function releaseAll() {
+      if (!gData || !graph) return;
+      gData.nodes.forEach(function(n) { delete n.fx; delete n.fy; delete n.fz; });
+      graph.graphData(gData);
+      graph.d3ReheatSimulation();
+    }
+
+    function resetLayout() {
+      localStorage.removeItem(LS_KEY);
+      fetch('/api/positions', { method: 'DELETE' }).catch(function(){});
+      reloadData(true);
+    }
+
+    function pinNode(node) { node.fx = node.x; node.fy = node.y; node.fz = node.z; }
+
+    function unpinNode(node) {
+      delete node.fx; delete node.fy; delete node.fz;
+      if (graph) graph.d3ReheatSimulation();
+    }
+
+    function focusCamera() {
+      if (!graph) return;
+      graph.cameraPosition({ x: 0, y: 80, z: 520 }, { x: 0, y: 0, z: 0 }, 1000);
+    }
+
+    function addStarfield(scene) {
+      var geom = new THREE.BufferGeometry();
+      var n = 5000;
+      var pos = new Float32Array(n * 3);
+      for (var i = 0; i < n; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 5000;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * 5000;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 5000;
+      }
+      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      var mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.4, sizeAttenuation: true, transparent: true, opacity: 0.85 });
+      starField = new THREE.Points(geom, mat);
+      scene.add(starField);
+      var geom2 = new THREE.BufferGeometry();
+      var n2 = 800;
+      var pos2 = new Float32Array(n2 * 3);
+      for (var j = 0; j < n2; j++) {
+        pos2[j * 3] = (Math.random() - 0.5) * 6000;
+        pos2[j * 3 + 1] = (Math.random() - 0.5) * 6000;
+        pos2[j * 3 + 2] = (Math.random() - 0.5) * 6000;
+      }
+      geom2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
+      var mat2 = new THREE.PointsMaterial({ color: 0x8899ff, size: 2.2, sizeAttenuation: true, transparent: true, opacity: 0.35 });
+      scene.add(new THREE.Points(geom2, mat2));
+    }
+
+    function makeOrbitRing(radius, color, opacity, tiltX, tiltZ) {
+      var pts = [];
+      for (var i = 0; i <= 96; i++) {
+        var a = (i / 96) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius * 0.82));
+      }
+      var geom = new THREE.BufferGeometry().setFromPoints(pts);
+      var mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: opacity });
+      var ring = new THREE.LineLoop(geom, mat);
+      ring.rotation.x = tiltX || 0;
+      ring.rotation.z = tiltZ || 0;
+      return ring;
+    }
+
+    function buildOrbitDecor(scene, hubs) {
+      orbitGroup = new THREE.Group();
+      var configs = {
+        'router-gateway': [
+          { r: 130, c: 0xffb74d, o: 0.38 },
+          { r: 200, c: 0xffcc80, o: 0.16 },
+          { r: 260, c: 0xffe082, o: 0.07 }
+        ],
+        'zbook-wifi': [
+          { r: 100, c: 0x448aff, o: 0.22 },
+          { r: 145, c: 0x64b5f6, o: 0.1 },
+          { r: 58, c: 0x74c7ec, o: 0.28 },
+          { r: 78, c: 0xce93d8, o: 0.14 }
+        ],
+        'homeassistant': [{ r: 75, c: 0xce93d8, o: 0.18 }]
+      };
+      hubs.forEach(function(hid) {
+        (configs[hid] || []).forEach(function(cfg, idx) {
+          var ring = makeOrbitRing(cfg.r, cfg.c, cfg.o, 1.1 + idx * 0.3, idx * 0.4);
+          ring.userData = { hubId: hid, spin: 0.0004 + idx * 0.0002 };
+          orbitGroup.add(ring);
+        });
+      });
+      scene.add(orbitGroup);
+    }
+
+    function buildNestTethers(scene, nodes) {
+      if (nestTetherGroup && scene) scene.remove(nestTetherGroup);
+      nestTetherGroup = new THREE.Group();
+      nodes.forEach(function(child) {
+        if (!child.runs_on) return;
+        var geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        var line = new THREE.Line(
+          geom,
+          new THREE.LineBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.42 })
+        );
+        line.userData = { childId: child.id, parentId: child.runs_on };
+        nestTetherGroup.add(line);
+      });
+      scene.add(nestTetherGroup);
+    }
+
+    function buildViewerPin(scene) {
+      if (viewerPinGroup && scene) scene.remove(viewerPinGroup);
+      viewerPinGroup = null;
+      if (!viewerDeviceId) return;
+      viewerPinGroup = new THREE.Group();
+      var mat = new THREE.MeshBasicMaterial({ color: 0xffd54f, transparent: true, opacity: 0.95, depthTest: false });
+      var headMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b, transparent: true, opacity: 0.98, depthTest: false });
+      var shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 16, 8), mat);
+      shaft.position.y = 8;
+      var head = new THREE.Mesh(new THREE.ConeGeometry(2.4, 8, 8), headMat);
+      head.position.y = 20;
+      head.rotation.x = Math.PI;
+      var ring = new THREE.Mesh(
+        new THREE.TorusGeometry(2.2, 0.35, 6, 24),
+        new THREE.MeshBasicMaterial({ color: 0xffeb3b, transparent: true, opacity: 0.85, depthTest: false })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.5;
+      viewerPinGroup.add(ring);
+      viewerPinGroup.add(shaft);
+      viewerPinGroup.add(head);
+      viewerPinGroup.renderOrder = 1002;
+      scene.add(viewerPinGroup);
+    }
+
+    function updateViewerPinPosition() {
+      if (!viewerPinGroup || !gData || !viewerDeviceId) return;
+      var node = gData.nodes.find(function(n) { return n.id === viewerDeviceId; });
+      if (!node || node.x == null) return;
+      var r = nodeRadius(node);
+      var scale = Math.max(0.7, Math.min(1.35, r / 11));
+      viewerPinGroup.scale.set(scale, scale, scale);
+      viewerPinGroup.position.set(node.x, node.y + r + 1, node.z);
+      viewerPinGroup.rotation.set(0, 0, 0);
+    }
+
+    function updateNestTethers() {
+      if (!nestTetherGroup || !gData) return;
+      nestTetherGroup.children.forEach(function(line) {
+        var child = gData.nodes.find(function(n) { return n.id === line.userData.childId; });
+        var parent = gData.nodes.find(function(n) { return n.id === line.userData.parentId; });
+        if (!child || !parent || child.x == null || parent.x == null) return;
+        line.geometry.setFromPoints([
+          new THREE.Vector3(parent.x, parent.y, parent.z),
+          new THREE.Vector3(child.x, child.y, child.z)
+        ]);
+      });
+    }
+
+    function updateOrbitsLabelsPulse() {
+      if (!graph || !gData) return;
+      var cam = graph.camera();
+      var camDist = cam.position.distanceTo(new THREE.Vector3(0, 0, 0));
+      pulseClock = performance.now() * 0.001;
+
+      if (orbitGroup) {
+        orbitGroup.children.forEach(function(ring) {
+          var hid = ring.userData.hubId;
+          var node = gData.nodes.find(function(n) { return n.id === hid; });
+          if (node && node.x != null) {
+            ring.position.set(node.x, node.y, node.z);
+            ring.rotation.y += ring.userData.spin || 0.0003;
+          }
+        });
+      }
+
+      labelSprites.forEach(function(entry) {
+        var scale = Math.max(0.85, Math.min(2.2, camDist / 280)) * (entry.baseSize / 5);
+        entry.sprite.textHeight = scale * 5;
+      });
+
+      updateNestTethers();
+      updateViewerPinPosition();
+
+      Object.keys(nodeVisuals).forEach(function(id) {
+        var v = nodeVisuals[id];
+        if (!v || !v.core || !v.core.material) return;
+        var mat = v.core.material;
+        var offline = v.status === 'offline';
+        if (offline) {
+          mat.emissiveIntensity = v.baseGlow * 0.2;
+          if (v.modeRing) v.modeRing.material.opacity = 0.18;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.25;
+          if (v.hubWire) v.hubWire.material.opacity = 0.1;
+          return;
+        }
+        if (v.pulse === 'strong') {
+          var amp = 0.22 + (v.cpuLoad || 0) / 100 * 0.18;
+          mat.emissiveIntensity = v.baseGlow + Math.sin(pulseClock * 2.8) * amp;
+          if (v.modeRing) v.modeRing.material.opacity = 0.42 + Math.sin(pulseClock * 2.8 + 0.5) * 0.14;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.55 + Math.sin(pulseClock * 2.8 + 0.5) * 0.12;
+          if (v.hubWire) v.hubWire.material.opacity = 0.2 + Math.sin(pulseClock * 2.8) * 0.08;
+        } else if (v.pulse === 'soft') {
+          mat.emissiveIntensity = v.baseGlow + Math.sin(pulseClock * 1.1) * 0.06;
+          if (v.modeRing) v.modeRing.material.opacity = 0.38;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.48;
+          if (v.hubWire) v.hubWire.material.opacity = 0.16;
+        } else {
+          mat.emissiveIntensity = v.baseGlow;
+          if (v.modeRing) v.modeRing.material.opacity = 0.45;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.58;
+          if (v.hubWire) v.hubWire.material.opacity = 0.18;
+        }
+      });
+    }
+
+    function makeNodeObject(node) {
+      var group = new THREE.Group();
+      var r = nodeRadius(node);
+      var col = new THREE.Color(node.color || '#89b4fa');
+      var p = node.personality || 'sensor';
+      var storageFactor = Math.min(1.2, Math.log10((node.storage_gb || 0.1) + 1) * 0.35);
+
+      var core = new THREE.Mesh(
+        new THREE.SphereGeometry(r, 22, 22),
+        new THREE.MeshLambertMaterial({
+          color: col, transparent: true, opacity: 0.93,
+          emissive: col, emissiveIntensity: node.glow || 0.2
+        })
+      );
+      group.add(core);
+
+      var modeCol = new THREE.Color(node.border || '#6c7086');
+      var modeRing = new THREE.Mesh(
+        new THREE.SphereGeometry(r * 1.72, 12, 12),
+        new THREE.MeshBasicMaterial({
+          color: modeCol, transparent: true, opacity: 0.48, wireframe: true,
+          depthWrite: false
+        })
+      );
+      modeRing.renderOrder = 2;
+      group.add(modeRing);
+
+      var isViewer = viewerDeviceId && node.id === viewerDeviceId;
+      var ringCol = isViewer ? new THREE.Color(0xffd54f) : modeCol;
+      var equatorRing = new THREE.Mesh(
+        new THREE.TorusGeometry(r * (isViewer ? 1.55 : 1.38), Math.max(0.35, r * (isViewer ? 0.11 : 0.07)), 6, 40),
+        new THREE.MeshBasicMaterial({
+          color: ringCol, transparent: true, opacity: isViewer ? 0.88 : 0.62,
+          depthWrite: false
+        })
+      );
+      equatorRing.rotation.x = Math.PI / 2;
+      equatorRing.renderOrder = 3;
+      group.add(equatorRing);
+
+      nodeVisuals[node.id] = {
+        core: core,
+        modeRing: modeRing,
+        equatorRing: equatorRing,
+        baseGlow: node.glow || 0.2,
+        pulse: node.pulse || 'off',
+        status: node.status || 'unknown',
+        cpuLoad: (node.metrics && node.metrics.cpu_load_pct) || 0
+      };
+
+      if (p === 'workhorse' || p === 'engine') {
+        group.add(new THREE.Mesh(
+          new THREE.SphereGeometry(r * (1.25 + storageFactor * 0.15), 18, 18),
+          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.07 })
+        ));
+        group.add(new THREE.Mesh(
+          new THREE.SphereGeometry(r * 1.55, 14, 14),
+          new THREE.MeshBasicMaterial({ color: 0x448aff, transparent: true, opacity: 0.04 })
+        ));
+        if (node.runs_on) {
+          group.add(new THREE.Mesh(
+            new THREE.SphereGeometry(r * 1.12, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0x74c7ec, transparent: true, opacity: 0.16, wireframe: true, depthWrite: false })
+          ));
+        }
+      } else if (p === 'hub') {
+        var hubWire = new THREE.Mesh(
+          new THREE.SphereGeometry(r * 3.4, 10, 10),
+          new THREE.MeshBasicMaterial({
+            color: 0xffb74d, transparent: true, opacity: 0.22, wireframe: true,
+            depthWrite: false
+          })
+        );
+        hubWire.renderOrder = 1;
+        group.add(hubWire);
+        nodeVisuals[node.id].hubWire = hubWire;
+      } else if (p === 'service') {
+        group.add(new THREE.Mesh(
+          new THREE.SphereGeometry(r * 1.3, 14, 14),
+          new THREE.MeshBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.08 })
+        ));
+        if (node.runs_on) {
+          group.add(new THREE.Mesh(
+            new THREE.SphereGeometry(r * 1.08, 10, 10),
+            new THREE.MeshBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.14, wireframe: true, depthWrite: false })
+          ));
+        }
+      } else if (storageFactor > 0.15 && p === 'edge') {
+        group.add(new THREE.Mesh(
+          new THREE.SphereGeometry(r * (1.2 + storageFactor * 0.1), 14, 14),
+          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.06 })
+        ));
+      }
+
+      if (typeof SpriteText !== 'undefined') {
+        var labelText = node.shortName || node.name;
+        if (node.runs_on) labelText = '↳ ' + labelText;
+        var spr = new SpriteText(labelText);
+        if (isViewer) { spr.color = '#fff9c4'; spr.fontWeight = 'bold'; }
+        else if (p === 'workhorse') { spr.color = '#fff3e0'; spr.fontWeight = 'bold'; }
+        else if (p === 'hub') { spr.color = '#ffe082'; spr.fontWeight = 'bold'; }
+        else if (p === 'edge') { spr.color = '#b2ebf2'; }
+        else if (p === 'service') { spr.color = '#e1bee7'; }
+        else { spr.color = '#b0bec5'; }
+        spr.textHeight = node.labelSize || 5;
+        spr.backgroundColor = 'rgba(8,12,28,0.88)';
+        spr.padding = 2.5;
+        spr.borderRadius = 4;
+        spr.material.depthTest = false;
+        spr.material.depthWrite = false;
+        spr.renderOrder = 999;
+        spr.position.y = r + (node.tier === 'asteroid' ? 10 : 14) + (node.labelSize || 5) * 0.35;
+        group.add(spr);
+        labelSprites.push({ sprite: spr, baseSize: node.labelSize || 5, nodeId: node.id });
+      }
+
+      return group;
+    }
+
+    function initGraph() {
+      if (typeof ForceGraph3D === 'undefined') {
+        showError('3d-force-graph failed to load.');
+        return false;
+      }
+      try {
+        var el = document.getElementById('g');
+        graph = ForceGraph3D()(el);
+        graph.backgroundColor('#050510');
+        graph.enableNavigationControls(true);
+        graph.nodeLabel(function(n) { return n.title || n.name; });
+        graph.nodeThreeObject(makeNodeObject);
+        graph.nodeThreeObjectExtend(false);
+        graph.linkColor(function(l) { return l.color || '#556'; });
+        graph.linkWidth(function(l) { return Math.max(0.4, (l.width || 1) * 0.55); });
+        graph.linkOpacity(0.42);
+        graph.linkLabel(function(l) { return (l.label || '') + (l.title ? '\n' + l.title : ''); });
+        graph.linkDirectionalArrowLength(function(l) { return l.directed ? 3 : 0; });
+        graph.linkDirectionalArrowRelPos(0.88);
+        graph.linkCurvature(0.18);
+        graph.linkDirectionalParticles(function(l) { return l.directed ? 1 : 0; });
+        graph.linkDirectionalParticleWidth(1.2);
+        graph.linkDirectionalParticleSpeed(0.004);
+        graph.onNodeDragEnd(pinNode);
+        graph.onNodeRightClick(unpinNode);
+        graph.onNodeClick(function(node) {
+          var now = Date.now();
+          if (lastClick.id === node.id && now - lastClick.t < 400) {
+            unpinNode(node);
+            lastClick.id = null;
+          } else {
+            lastClick = { id: node.id, t: now };
+            renderDetail(node);
+          }
+        });
+        graph.d3Force('charge').strength(function(n) { return -120 - (n.val || 5) * 28; });
+        graph.d3Force('link').distance(function(l) {
+          var sid = l.source.id || l.source;
+          var tid = l.target.id || l.target;
+          var s = gData && gData.nodes.find(function(n) { return n.id === sid; });
+          var t = gData && gData.nodes.find(function(n) { return n.id === tid; });
+          if (s && t && (s.runs_on === tid || t.runs_on === sid)) return 22;
+          if (l.medium === 'docker_bridge') return 38;
+          return 100 + ((s && s.val) || 5) * 5 + ((t && t.val) || 5) * 5;
+        });
+        graph.d3VelocityDecay(0.35);
+        graph.warmupTicks(100);
+        graph.cooldownTicks(180);
+
+        var scene = graph.scene();
+        scene.fog = new THREE.FogExp2(0x050510, 0.00045);
+        addStarfield(scene);
+
+        graph.onEngineTick(updateOrbitsLabelsPulse);
+
+        sizeGraph();
+        window.addEventListener('resize', sizeGraph);
+        return true;
+      } catch (e) {
+        showError('Graph init failed: ' + e.message);
+        graph = null;
+        return false;
+      }
+    }
+
+    function applyData(api) {
+      if (!api || !api.nodes) { showError('No network data'); return; }
+      raw = api;
+      labelSprites = [];
+      nodeVisuals = {};
+      document.getElementById('err').style.display = 'none';
+      document.getElementById('meta').textContent =
+        'Updated ' + api.generated + ' · ' + api.scanner +
+        ' · HA ' + (api.ha_api ? 'on' : 'off') +
+        (api.ha_discovered ? ' · HA+' + api.ha_discovered : '') +
+        (api.arp_discovered ? ' · LAN+' + api.arp_discovered : '') +
+        ' · Glances ' + (api.glances ? 'live' : 'off') +
+        (viewerDeviceName ? ' · 📍 ' + viewerDeviceName : '') +
+        ' · ' + api.nodes.length + ' bodies · ' + api.edges.length + ' links · space view';
+      updateViewerBanner();
+
+      gData = buildGraphData(api);
+
+      if (!graph && !initGraph()) return;
+      if (!graph) return;
+
+      if (orbitGroup && graph.scene()) {
+        graph.scene().remove(orbitGroup);
+        orbitGroup = null;
+      }
+      buildOrbitDecor(graph.scene(), api.orbit_hubs || ['router-gateway', 'zbook-wifi']);
+      buildNestTethers(graph.scene(), gData.nodes);
+      buildViewerPin(graph.scene());
+
+      graph.graphData(gData);
+      sizeGraph();
+      setTimeout(focusCamera, 400);
+
+      document.getElementById('legend').innerHTML = Object.entries(api.medium_legend).map(function(entry) {
+        var label = entry[1];
+        var edge = api.edges.find(function(e) { return e.label && e.label.indexOf(label) === 0; });
+        var color = edge ? (typeof edge.color === 'string' ? edge.color : '#78909c') : '#78909c';
+        return '<div class="legend-row"><span class="swatch" style="border-color:' + color + '"></span>' + label + '</div>';
+      }).join('');
+    }
+
+    function mergeLivePositions(api) {
+      if (!gData || !graph) return api;
+      api.saved_positions = Object.assign({}, api.saved_positions || {}, collectPositions());
+      return api;
+    }
+
+    async function reloadData(forceReset) {
+      try {
+        var res = await fetch('network-data.json?t=' + Date.now());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var api = await res.json();
+        await fetchViewer(api);
+        if (!forceReset) api = mergeLivePositions(api);
+        applyData(api);
+      } catch (e) {
+        var embedded = readEmbedded();
+        if (embedded) {
+          await fetchViewer(embedded);
+          applyData(embedded);
+        } else showError('Load failed: ' + e.message);
+      }
+    }
+
+    function toggleAuto() {
+      var el = document.getElementById('autoState');
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; el.textContent = 'off'; return; }
+      el.textContent = REFRESH_SEC + 's';
+      autoTimer = setInterval(function() { reloadData(false); }, REFRESH_SEC * 1000);
+    }
+
+    window.addEventListener('load', function() { reloadData(false); });
+  </script>
+</body>
+</html>

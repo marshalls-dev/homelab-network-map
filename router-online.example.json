@@ -1,0 +1,10 @@
+{
+  "_comment": "Optional: paste IPs from Videotron Helix router (10.0.0.1) Connected devices. Merged with ARP on the Mac running the scanner.",
+  "exported": "2026-06-06",
+  "ips": ["10.0.0.142", "10.0.0.208", "10.0.0.169"],
+  "macs": {
+    "10.0.0.142": "",
+    "10.0.0.208": "",
+    "10.0.0.169": ""
+  }
+}

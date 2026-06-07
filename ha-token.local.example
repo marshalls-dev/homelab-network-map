@@ -1,0 +1,5 @@
+# Rename/copy to ha-token.local (one line — your HA long-lived token only)
+# HA → Profile → Security → Long-Lived Access Tokens → Create Token
+# This file is read automatically by generate_network_map.py --serve
+
+paste-your-token-here
