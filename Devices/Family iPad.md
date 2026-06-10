@@ -1,29 +1,29 @@
 ---
 type: device
-status: online
-mode: active
-latency_ms: 819.0
-packet_loss_pct: 0.0
+status: offline
+mode: offline
+latency_ms: null
+packet_loss_pct: 100.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 12:00:56
+generated: 2026-06-09 23:10:49
 ---
 
 # Family iPad
 
-> Helix: iPad · active on 5 GHz
+> Helix · iPad
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **online** |
-| **Mode** | **active** |
-| **Ping avg** | 819.0 ms |
-| **Packet loss** | 0.0% |
-| **Address** | 10.0.0.208 |
+| **Reachability** | **offline** |
+| **Mode** | **offline** |
+| **Ping avg** | — |
+| **Packet loss** | 100.0% |
+| **Address** | 10.0.0.57 |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-Apple · private Wi‑Fi MAC
+Helix: iPad · 72:D3:AF:55:C2:F6
 
 ## Services
 
@@ -31,4 +31,4 @@ Apple · private Wi‑Fi MAC
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | LAN ARP discovery |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Helix router registry |

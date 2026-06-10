@@ -4,9 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Homelab Network — Space Map</title>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.8.2/dist/three-spritetext.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js"
+    }
+  }
+  </script>
   <style>
     :root { --bg:#050510; --panel:#12121f; --text:#cdd6f4; --muted:#8b93b0; --accent:#89b4fa; }
     * { box-sizing:border-box; }
@@ -52,6 +56,13 @@
     #viewerBanner { display:none; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:linear-gradient(135deg,rgba(255,213,79,0.18),rgba(255,152,0,0.08)); border:1px solid rgba(255,213,79,0.35); font-size:.78rem; }
     #viewerBanner b { color:#ffe082; }
     #haWarning { display:none; margin-bottom:10px; padding:8px 10px; border-radius:8px; background:rgba(243,139,168,0.12); border:1px solid rgba(243,139,168,0.35); font-size:.75rem; color:#f5c2e7; line-height:1.45; }
+    #viewStats { font-size:.72rem; color:#a6adc8; margin:4px 0 8px; line-height:1.4; }
+    .preset-grid { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+    .preset-grid button { font-size:.72rem; padding:4px 8px; }
+    .preset-grid button.active { background:#74c7ec; color:#0e0e18; }
+    .toggle-row { display:flex; align-items:flex-start; gap:8px; margin:5px 0; font-size:.76rem; color:#bac2de; line-height:1.35; }
+    .toggle-row input { margin-top:2px; accent-color:var(--accent); }
+    .toggle-row select { background:#2a2a3d; color:var(--text); border:1px solid #3a3a52; border-radius:4px; font-size:.72rem; padding:2px 4px; }
   </style>
 </head>
 <body>
@@ -75,6 +86,20 @@
       <h2>Selected</h2>
       <div id="detail">Click a device for details.</div>
       <div id="err"></div>
+      <h2>View</h2>
+      <div id="viewStats">Loading filters…</div>
+      <div class="preset-grid" id="presetGrid"></div>
+      <label class="toggle-row">Offline devices
+        <select id="offlineMode" onchange="onViewToggleChange()">
+          <option value="ghost">Ghost (fade)</option>
+          <option value="hide">Hide</option>
+          <option value="show">Show all</option>
+        </select>
+      </label>
+      <label class="toggle-row"><input type="checkbox" id="hideVirtual" onchange="onViewToggleChange()"> Hide virtual containers (WSL · HA · MC)</label>
+      <label class="toggle-row"><input type="checkbox" id="hideRouter" onchange="onViewToggleChange()"> Hide router hub</label>
+      <label class="toggle-row"><input type="checkbox" id="hideStale" onchange="onViewToggleChange()"> Hide stale registry (offline in Helix)</label>
+      <label class="toggle-row"><input type="checkbox" id="hideDegradedLinks" onchange="onViewToggleChange()"> Fade degraded links</label>
       <h2>Scale legend</h2>
       <p class="hint">
         Size = <b>RAM + storage + compute</b><br>
@@ -82,7 +107,7 @@
         <span class="tier">planet</span> Macs · WSL · HA<br>
         <span class="tier">moon</span> displays · services<br>
         <span class="tier">asteroid</span> plugs · sensors<br>
-        <span class="tier">hub</span> router — small body, wide orbit rings<br>
+        <span class="tier">hub</span> router — wireframe halo + orbit ring<br>
         <span class="hint">Purple tethers = runs inside parent (WSL → ZBook, HA → WSL)</span><br>
       </p>
       <h2>Navigation</h2>
@@ -97,14 +122,355 @@
     <div id="g"></div>
   </div>
   <script type="application/json" id="network-data">__NETWORK_DATA_JSON__</script>
-  <script>
+  <script type="module">
+    import * as THREE from 'three';
+
+    window.THREE = THREE;
+
+    function loadScript(src) {
+      return new Promise(function(resolve, reject) {
+        var el = document.createElement('script');
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = reject;
+        document.head.appendChild(el);
+      });
+    }
+
+    try {
+      await loadScript('https://cdn.jsdelivr.net/npm/three-spritetext@1.8.2/dist/three-spritetext.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/3d-force-graph@1.78.0/dist/3d-force-graph.min.js');
+    } catch (bootErr) {
+      document.getElementById('err').style.display = 'block';
+      document.getElementById('err').textContent = 'Library load failed: ' + bootErr.message;
+      throw bootErr;
+    }
+
     var graph = null, raw = null, gData = null, autoTimer = null;
     var REFRESH_SEC = 30, LS_KEY = 'homelab-node-positions-v2';
     var lastClick = { id: null, t: 0 };
-    var starField = null, orbitGroup = null, nestTetherGroup = null, viewerPinGroup = null;
+    var starFieldGroup = null;
+    var nestTetherGroup = null, viewerPinGroup = null;
     var labelSprites = [], nodeVisuals = {};
     var pulseClock = 0;
+    var LIVE_WS_PORT = 8766;
+    var liveSocket = null;
+    var liveSocketRetry = null;
+    var liveStreamConnected = false;
+    var nodePingMap = {};
+    var linkBoostMap = {};
     var viewerDeviceId = null, viewerDeviceName = null;
+    var masterGraphData = null;
+    var VIEW_LS_KEY = 'homelab-view-prefs-v2';
+    var LAYOUT_SCALE = 7.5;
+    var DEFAULT_CAMERA_Z = 1200;
+    var viewState = {
+      preset: 'live-lan',
+      offlineMode: 'ghost',
+      hideVirtual: false,
+      hideRouter: false,
+      hideStale: true,
+      hideDegradedLinks: false
+    };
+    var PRESET_DEFS = [
+      { id: 'live-lan', label: 'Live LAN', focus: 'router-gateway' },
+      { id: 'full', label: 'Full map', focus: null },
+      { id: 'homelab-core', label: 'Homelab core', focus: 'zbook-wifi' },
+      { id: 'ha-network', label: 'HA network', focus: 'homeassistant' },
+      { id: 'hardware-only', label: 'Hardware', focus: 'zbook-wifi' },
+      { id: 'iot-belt', label: 'IoT belt', focus: null },
+      { id: 'mobile-people', label: 'Mobile', focus: null }
+    ];
+    var PRESET_FOCUS = {
+      'live-lan': 'router-gateway',
+      'full': null,
+      'homelab-core': 'zbook-wifi',
+      'ha-network': 'homeassistant',
+      'hardware-only': 'zbook-wifi',
+      'iot-belt': null,
+      'mobile-people': null
+    };
+    var viewCameraPending = true;
+
+    function loadViewPrefs() {
+      try {
+        var saved = JSON.parse(localStorage.getItem(VIEW_LS_KEY) || '{}');
+        Object.keys(viewState).forEach(function(k) {
+          if (saved[k] !== undefined) viewState[k] = saved[k];
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    function saveViewPrefs() {
+      localStorage.setItem(VIEW_LS_KEY, JSON.stringify(viewState));
+    }
+
+    function syncViewControls() {
+      document.querySelectorAll('#presetGrid button').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.preset === viewState.preset);
+      });
+      var offlineEl = document.getElementById('offlineMode');
+      if (offlineEl) offlineEl.value = viewState.offlineMode;
+      ['hideVirtual', 'hideRouter', 'hideStale', 'hideDegradedLinks'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.checked = !!viewState[id];
+      });
+    }
+
+    function initViewControls() {
+      var grid = document.getElementById('presetGrid');
+      if (!grid || grid.dataset.ready) return;
+      grid.dataset.ready = '1';
+      PRESET_DEFS.forEach(function(p) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'secondary';
+        btn.dataset.preset = p.id;
+        btn.textContent = p.label;
+        btn.onclick = function() { setViewPreset(p.id); };
+        grid.appendChild(btn);
+      });
+      loadViewPrefs();
+      syncViewControls();
+    }
+
+    function applyPresetDefaults(presetId) {
+      viewState.preset = presetId;
+      if (presetId === 'full') {
+        viewState.offlineMode = 'show';
+        viewState.hideVirtual = false;
+        viewState.hideRouter = false;
+        viewState.hideStale = false;
+      } else if (presetId === 'live-lan') {
+        viewState.offlineMode = 'ghost';
+        viewState.hideVirtual = false;
+        viewState.hideRouter = false;
+        viewState.hideStale = true;
+      } else if (presetId === 'ha-network') {
+        viewState.offlineMode = 'hide';
+        viewState.hideVirtual = true;
+        viewState.hideRouter = true;
+        viewState.hideStale = true;
+      } else if (presetId === 'hardware-only') {
+        viewState.offlineMode = 'hide';
+        viewState.hideVirtual = true;
+        viewState.hideRouter = false;
+        viewState.hideStale = true;
+      } else if (presetId === 'iot-belt') {
+        viewState.offlineMode = 'hide';
+        viewState.hideVirtual = true;
+        viewState.hideRouter = true;
+        viewState.hideStale = true;
+      } else if (presetId === 'mobile-people') {
+        viewState.offlineMode = 'hide';
+        viewState.hideVirtual = true;
+        viewState.hideRouter = true;
+        viewState.hideStale = true;
+      } else if (presetId === 'homelab-core') {
+        viewState.offlineMode = 'ghost';
+        viewState.hideVirtual = false;
+        viewState.hideRouter = false;
+        viewState.hideStale = true;
+      }
+    }
+
+    function setViewPreset(presetId) {
+      applyPresetDefaults(presetId);
+      syncViewControls();
+      saveViewPrefs();
+      applyViewToGraph(true);
+    }
+
+    function onViewToggleChange() {
+      viewState.offlineMode = document.getElementById('offlineMode').value;
+      viewState.hideVirtual = document.getElementById('hideVirtual').checked;
+      viewState.hideRouter = document.getElementById('hideRouter').checked;
+      viewState.hideStale = document.getElementById('hideStale').checked;
+      viewState.hideDegradedLinks = document.getElementById('hideDegradedLinks').checked;
+      saveViewPrefs();
+      applyViewToGraph(false);
+    }
+
+    function nodeClusters(node) {
+      return node.cluster || [];
+    }
+
+    function nodeViews(node) {
+      return node.views || {};
+    }
+
+    var PRESET_ANCHORS = {
+      'homelab-core': ['zbook-wifi'],
+      'ha-network': ['homeassistant', 'zbook-wifi'],
+      'hardware-only': ['zbook-wifi'],
+      'iot-belt': [],
+      'mobile-people': []
+    };
+
+    var HA_EDGE_MEDIA = ['ha_mobile', 'cast', 'cloud_api', 'http', 'rtsp'];
+    var CORE_EDGE_MEDIA = ['docker_bridge', 'portproxy', 'logical', 'tailscale', 'http', 'wifi', 'wifi_2g', 'wifi_5g'];
+
+    function matchesPreset(node) {
+      var v = nodeViews(node);
+      var preset = viewState.preset;
+      if (preset === 'full' || preset === 'live-lan') return true;
+      if (preset === 'homelab-core') return !!v.homelab_core;
+      if (preset === 'ha-network') return !!v.ha_network;
+      if (preset === 'hardware-only') return !!v.hardware;
+      if (preset === 'iot-belt') return !!v.iot_belt;
+      if (preset === 'mobile-people') {
+        var clusters = nodeClusters(node);
+        return clusters.indexOf('personal') >= 0 || clusters.indexOf('ha-mobile') >= 0;
+      }
+      return true;
+    }
+
+    function linkMatchesPreset(link) {
+      var preset = viewState.preset;
+      if (preset === 'full' || preset === 'live-lan') return true;
+      var sid = link.source.id || link.source;
+      var tid = link.target.id || link.target;
+      var medium = link.medium || '';
+      if (preset === 'ha-network') {
+        if (HA_EDGE_MEDIA.indexOf(medium) >= 0) return true;
+        if (medium === 'portproxy' && (sid === 'zbook-wifi' || tid === 'zbook-wifi')) return true;
+        if ((sid === 'router-gateway' || tid === 'router-gateway') && (medium.indexOf('wifi') >= 0 || medium === 'wifi' || medium === 'ethernet')) {
+          return true;
+        }
+        return false;
+      }
+      if (preset === 'homelab-core') {
+        if (CORE_EDGE_MEDIA.indexOf(medium) >= 0) return true;
+        return sid.indexOf('minecraft') >= 0 || tid.indexOf('minecraft') >= 0;
+      }
+      if (preset === 'iot-belt') {
+        if (sid === 'router-gateway' || tid === 'router-gateway') return medium.indexOf('wifi') >= 0 || medium === 'wifi';
+        if (medium === 'cloud_api' || medium === 'cast') return false;
+        return medium.indexOf('wifi') >= 0 || medium === 'wifi' || medium === 'ethernet';
+      }
+      if (preset === 'hardware-only') {
+        if (medium === 'docker_bridge' || medium === 'portproxy' || medium === 'logical') return false;
+        return true;
+      }
+      if (preset === 'mobile-people') {
+        if (medium === 'ha_mobile') return true;
+        if (sid === 'router-gateway' || tid === 'router-gateway') return medium.indexOf('wifi') >= 0 || medium === 'wifi';
+        return false;
+      }
+      return true;
+    }
+
+    function evaluateNode(node) {
+      if (viewState.hideRouter && node.id === 'router-gateway') {
+        return { show: true, ghost: true };
+      }
+      if (!matchesPreset(node)) return { show: false, ghost: false };
+      if (viewState.hideVirtual && (node.layer === 'virtual' || node.runs_on)) {
+        if (viewState.preset === 'ha-network' && node.id === 'homeassistant') {
+          /* HA hub stays visible even though virtual */
+        } else {
+          return { show: false, ghost: false };
+        }
+      }
+      if (viewState.hideStale && node.stale_registry) return { show: false, ghost: false };
+      if (node.status === 'offline') {
+        if (viewState.offlineMode === 'hide') return { show: false, ghost: false };
+        if (viewState.offlineMode === 'ghost') return { show: true, ghost: true };
+      }
+      return { show: true, ghost: false };
+    }
+
+    function filterGraphData(data) {
+      var visible = {};
+      var ghostCount = 0;
+      var hiddenCount = 0;
+      data.nodes.forEach(function(n) {
+        var ev = evaluateNode(n);
+        if (!ev.show) { hiddenCount++; return; }
+        visible[n.id] = ev.ghost;
+        if (ev.ghost) ghostCount++;
+      });
+      var nodes = data.nodes.filter(function(n) { return visible[n.id] !== undefined; }).map(function(n) {
+        var copy = Object.assign({}, n);
+        copy._ghost = !!visible[n.id];
+        return copy;
+      });
+      var links = data.links.filter(function(l) {
+        var sid = l.source.id || l.source;
+        var tid = l.target.id || l.target;
+        if (visible[sid] === undefined || visible[tid] === undefined) return false;
+        if (!linkMatchesPreset(l)) return false;
+        return true;
+      }).map(function(l) {
+        var copy = Object.assign({}, l);
+        var sid = l.source.id || l.source;
+        var tid = l.target.id || l.target;
+        copy._ghost = !!(visible[sid] || visible[tid]);
+        if (viewState.hideDegradedLinks && copy.label && copy.label.indexOf('degraded') >= 0) copy._ghost = true;
+        return copy;
+      });
+
+      if (viewState.preset !== 'full' && viewState.preset !== 'live-lan') {
+        var anchors = PRESET_ANCHORS[viewState.preset] || [];
+        var degree = {};
+        links.forEach(function(l) {
+          var sid = l.source.id || l.source;
+          var tid = l.target.id || l.target;
+          degree[sid] = (degree[sid] || 0) + 1;
+          degree[tid] = (degree[tid] || 0) + 1;
+        });
+        nodes = nodes.filter(function(n) {
+          if (n._ghost) return true;
+          if (anchors.indexOf(n.id) >= 0) return true;
+          return (degree[n.id] || 0) > 0;
+        });
+        var nodeIds = {};
+        nodes.forEach(function(n) { nodeIds[n.id] = true; });
+        links = links.filter(function(l) {
+          var sid = l.source.id || l.source;
+          var tid = l.target.id || l.target;
+          return nodeIds[sid] && nodeIds[tid];
+        });
+        hiddenCount += data.nodes.length - nodes.length;
+      }
+
+      return { nodes: nodes, links: links, stats: { shown: nodes.length, hidden: hiddenCount, ghost: ghostCount, total: data.nodes.length } };
+    }
+
+    function updateViewStats(stats) {
+      var el = document.getElementById('viewStats');
+      if (!el || !stats) return;
+      el.textContent = stats.shown + ' visible · ' + stats.ghost + ' ghost · ' + stats.hidden + ' hidden · ' + stats.total + ' total';
+    }
+
+    function focusForPreset() {
+      if (!graph || !gData) return;
+      var focusId = PRESET_FOCUS[viewState.preset];
+      if (focusId) {
+        var node = gData.nodes.find(function(n) { return n.id === focusId; });
+        if (node && node.x != null) {
+          graph.cameraPosition(
+            { x: node.x, y: node.y + 70 * LAYOUT_SCALE, z: node.z + 260 * LAYOUT_SCALE },
+            { x: node.x, y: node.y, z: node.z },
+            1100
+          );
+          return;
+        }
+      }
+      focusCamera();
+    }
+
+    function applyViewToGraph(animateCamera) {
+      if (!masterGraphData || !graph) return;
+      var filtered = filterGraphData(masterGraphData);
+      gData = filtered;
+      updateViewStats(filtered.stats);
+      labelSprites = [];
+      nodeVisuals = {};
+      graph.graphData(gData);
+      buildNestTethers(graph.scene(), gData.nodes);
+      if (animateCamera) focusForPreset();
+    }
 
     function showError(msg) {
       document.getElementById('err').style.display = 'block';
@@ -119,11 +485,14 @@
     }
 
     function getSavedPositions(api) {
+      var out = {};
       try {
         var ls = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-        if (Object.keys(ls).length) return ls;
+        if (Object.keys(ls).length) out = ls;
       } catch (e) {}
-      return api.saved_positions || {};
+      if (!Object.keys(out).length) out = Object.assign({}, api.saved_positions || {});
+      if (hasIndividualPlugNodes(api)) delete out['smart-plugs'];
+      return out;
     }
 
     function posObj(p) {
@@ -132,7 +501,7 @@
       return p;
     }
 
-    function nodeRadius(n) { return Math.pow(n.val || 5, 0.55) * 2.8; }
+    function nodeRadius(n) { return Math.pow(n.val || 5, 0.55) * 8.25; }
 
     function fmtGb(n) {
       if (n == null || isNaN(n)) return '—';
@@ -219,14 +588,24 @@
       document.getElementById('detail').innerHTML = html;
     }
 
+    function hasIndividualPlugNodes(api) {
+      return (api.nodes || []).some(function(n) { return /^plug-\d+$/.test(n.id); });
+    }
+
     function buildGraphData(api) {
       var saved = getSavedPositions(api);
       var seeds = api.layout_seeds || {};
-      var nodes = api.nodes.map(function(n) {
+      var sourceNodes = api.nodes || [];
+      if (hasIndividualPlugNodes(api)) {
+        sourceNodes = sourceNodes.filter(function(n) { return n.id !== 'smart-plugs'; });
+        delete saved['smart-plugs'];
+      }
+      var nodes = sourceNodes.map(function(n) {
         var node = {
           id: n.id,
-          name: n.label,
+          name: n.shortName || n.label,
           shortName: n.shortName || n.label,
+          label: n.shortName || n.label,
           title: (n.title || '').replace(/\\n/g, '\n'),
           color: n.color,
           val: n.val || 5,
@@ -253,16 +632,30 @@
             source: 'static'
           },
           runs_on: n.runs_on || null,
-          nest_label: n.nest_label || null
+          nest_label: n.nest_label || null,
+          layer: n.layer || 'physical',
+          cluster: n.cluster || ['other'],
+          views: n.views || {},
+          stale_registry: !!n.stale_registry,
+          router_online: n.router_online,
+          ha_tracked: !!n.ha_tracked
         };
         var p = posObj(saved[n.id] || seeds[n.id]);
         if (p) {
+          if (!saved[n.id]) {
+            p = { x: p.x * LAYOUT_SCALE, y: p.y * LAYOUT_SCALE, z: p.z * LAYOUT_SCALE };
+          }
           node.x = p.x; node.y = p.y; node.z = p.z;
           if (saved[n.id]) { node.fx = p.x; node.fy = p.y; node.fz = p.z; }
         }
         return node;
       });
-      var links = api.edges.map(function(e) {
+      var links = (api.edges || []).filter(function(e) {
+        if (!hasIndividualPlugNodes(api)) return true;
+        var sid = e.source || e.from;
+        var tid = e.target || e.to;
+        return sid !== 'smart-plugs' && tid !== 'smart-plugs';
+      }).map(function(e) {
         return {
           source: e.source || e.from,
           target: e.target || e.to,
@@ -319,73 +712,331 @@
 
     function focusCamera() {
       if (!graph) return;
-      graph.cameraPosition({ x: 0, y: 80, z: 520 }, { x: 0, y: 0, z: 0 }, 1000);
+      graph.cameraPosition(
+        { x: 0, y: 150, z: DEFAULT_CAMERA_Z },
+        { x: 0, y: 0, z: 0 },
+        1000
+      );
+    }
+
+    function scatterSphericalStars(count, maxRadius, minRadius, innerPocket) {
+      var pos = new Float32Array(count * 3);
+      var outerMin = minRadius || 0;
+      var outerSpan = maxRadius - outerMin;
+      var pocketCount = innerPocket ? Math.floor(count * innerPocket.fraction) : 0;
+      var pocketMin = innerPocket ? (innerPocket.min || 60) : 0;
+      var pocketMax = innerPocket ? innerPocket.max : 0;
+      var pocketSpan = pocketMax - pocketMin;
+
+      for (var i = 0; i < count; i++) {
+        var u = Math.random();
+        var v = Math.random();
+        var theta = Math.PI * 2 * u;
+        var phi = Math.acos(2 * v - 1);
+        var r;
+        if (i < pocketCount && innerPocket) {
+          r = pocketMin + pocketSpan * Math.cbrt(Math.random());
+        } else if (innerPocket && pocketCount < count) {
+          var shellMin = Math.max(outerMin, pocketMax);
+          r = shellMin + (maxRadius - shellMin) * Math.cbrt(Math.random());
+        } else {
+          r = outerMin + outerSpan * Math.cbrt(Math.random());
+        }
+        var sinPhi = Math.sin(phi);
+        pos[i * 3] = r * sinPhi * Math.cos(theta);
+        pos[i * 3 + 1] = r * sinPhi * Math.sin(theta);
+        pos[i * 3 + 2] = r * Math.cos(phi);
+      }
+      return pos;
+    }
+
+    function buildStarLayer(count, maxRadius, minRadius, size, color, opacity, name, innerPocket) {
+      var geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(scatterSphericalStars(count, maxRadius, minRadius, innerPocket), 3));
+      var layer = new THREE.Points(
+        geom,
+        new THREE.PointsMaterial({
+          color: color,
+          size: size,
+          sizeAttenuation: true,
+          transparent: opacity < 1,
+          opacity: opacity,
+          depthWrite: false,
+          fog: false
+        })
+      );
+      layer.name = name;
+      layer.frustumCulled = false;
+      layer.renderOrder = -1000;
+      return layer;
     }
 
     function addStarfield(scene) {
-      var geom = new THREE.BufferGeometry();
-      var n = 5000;
-      var pos = new Float32Array(n * 3);
-      for (var i = 0; i < n; i++) {
-        pos[i * 3] = (Math.random() - 0.5) * 5000;
-        pos[i * 3 + 1] = (Math.random() - 0.5) * 5000;
-        pos[i * 3 + 2] = (Math.random() - 0.5) * 5000;
-      }
-      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      var mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.4, sizeAttenuation: true, transparent: true, opacity: 0.85 });
-      starField = new THREE.Points(geom, mat);
-      scene.add(starField);
-      var geom2 = new THREE.BufferGeometry();
-      var n2 = 800;
-      var pos2 = new Float32Array(n2 * 3);
-      for (var j = 0; j < n2; j++) {
-        pos2[j * 3] = (Math.random() - 0.5) * 6000;
-        pos2[j * 3 + 1] = (Math.random() - 0.5) * 6000;
-        pos2[j * 3 + 2] = (Math.random() - 0.5) * 6000;
-      }
-      geom2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
-      var mat2 = new THREE.PointsMaterial({ color: 0x8899ff, size: 2.2, sizeAttenuation: true, transparent: true, opacity: 0.35 });
-      scene.add(new THREE.Points(geom2, mat2));
-    }
-
-    function makeOrbitRing(radius, color, opacity, tiltX, tiltZ) {
-      var pts = [];
-      for (var i = 0; i <= 96; i++) {
-        var a = (i / 96) * Math.PI * 2;
-        pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius * 0.82));
-      }
-      var geom = new THREE.BufferGeometry().setFromPoints(pts);
-      var mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: opacity });
-      var ring = new THREE.LineLoop(geom, mat);
-      ring.rotation.x = tiltX || 0;
-      ring.rotation.z = tiltZ || 0;
-      return ring;
-    }
-
-    function buildOrbitDecor(scene, hubs) {
-      orbitGroup = new THREE.Group();
-      var configs = {
-        'router-gateway': [
-          { r: 130, c: 0xffb74d, o: 0.38 },
-          { r: 200, c: 0xffcc80, o: 0.16 },
-          { r: 260, c: 0xffe082, o: 0.07 }
-        ],
-        'zbook-wifi': [
-          { r: 100, c: 0x448aff, o: 0.22 },
-          { r: 145, c: 0x64b5f6, o: 0.1 },
-          { r: 58, c: 0x74c7ec, o: 0.28 },
-          { r: 78, c: 0xce93d8, o: 0.14 }
-        ],
-        'homeassistant': [{ r: 75, c: 0xce93d8, o: 0.18 }]
-      };
-      hubs.forEach(function(hid) {
-        (configs[hid] || []).forEach(function(cfg, idx) {
-          var ring = makeOrbitRing(cfg.r, cfg.c, cfg.o, 1.1 + idx * 0.3, idx * 0.4);
-          ring.userData = { hubId: hid, spin: 0.0004 + idx * 0.0002 };
-          orbitGroup.add(ring);
+      if (!scene) return;
+      if (starFieldGroup) {
+        scene.remove(starFieldGroup);
+        starFieldGroup.children.forEach(function(layer) {
+          layer.geometry.dispose();
+          layer.material.dispose();
         });
+        starFieldGroup = null;
+      }
+      starFieldGroup = new THREE.Group();
+      starFieldGroup.name = 'homelab-starfield';
+      starFieldGroup.add(buildStarLayer(6000, 10000, 2200, 1.35, 0xd0dcff, 0.85, 'stars-deep'));
+      starFieldGroup.add(buildStarLayer(3000, 6000, 1500, 2.0, 0xffffff, 0.95, 'stars-mid', { fraction: 0.42, min: 120, max: 1500 }));
+      starFieldGroup.add(buildStarLayer(500, 2800, 1500, 3.15, 0xffffff, 1.0, 'stars-near', { fraction: 0.68, min: 50, max: 1500 }));
+      scene.add(starFieldGroup);
+    }
+
+    function syncStarfieldToCamera(camera) {
+      if (!starFieldGroup || !camera) return;
+      starFieldGroup.position.copy(camera.position);
+    }
+
+    function configureRenderer() {
+      if (!graph) return;
+      var renderer = graph.renderer();
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.setClearColor(0x000000, 1);
+    }
+
+    function configureSceneLights() {
+      var sun = new THREE.DirectionalLight(0xffffff, 2.5);
+      sun.position.set(3000, 4000, 2000);
+      var ambient = new THREE.AmbientLight(0x101424, 0.25);
+      graph.lights([sun, ambient]);
+    }
+
+    function radarWireMaterial(emissiveCol, opacity) {
+      return new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        emissive: emissiveCol,
+        emissiveIntensity: 1.1,
+        wireframe: true,
+        transparent: true,
+        opacity: opacity,
+        roughness: 0.4,
+        metalness: 0.1,
+        depthWrite: false,
+        fog: false
       });
-      scene.add(orbitGroup);
+    }
+
+    function neonColor(hex) {
+      var c = new THREE.Color(hex || '#00e5ff');
+      var hsl = { h: 0, s: 0, l: 0 };
+      c.getHSL(hsl);
+      c.setHSL(hsl.h, 1.0, Math.min(0.56, Math.max(0.46, hsl.l)));
+      return c;
+    }
+
+    var MEDIUM_PARTICLE_COLORS = {
+      wifi: '#ffcc00',
+      wifi_5g: '#ff9900',
+      wifi_2g: '#ff6600',
+      ethernet: '#00b0ff',
+      docker_bridge: '#ff00ff',
+      portproxy: '#00ffff',
+      tailscale: '#00ff88',
+      cloud_api: '#88ccff',
+      cast: '#ffff00',
+      rtsp: '#ff0044',
+      http: '#cc44ff',
+      logical: '#8899aa',
+      bluetooth: '#00eeff',
+      ha_mobile: '#00ffcc'
+    };
+
+    function linkParticleColor(link) {
+      if (!link || link._ghost) return '#5a6070';
+      var medium = link.medium || '';
+      return MEDIUM_PARTICLE_COLORS[medium] || link.color || '#00e5ff';
+    }
+
+    function linkParticleSpeed(link) {
+      if (!link || link._ghost) return 0;
+      var label = (link.label || '').toLowerCase();
+      if (label.indexOf('degraded') >= 0 || label.indexOf('down') >= 0 || label.indexOf('offline') >= 0) return 0;
+      var medium = link.medium || '';
+      if (medium === 'ethernet' || medium === 'docker_bridge' || medium === 'portproxy' || medium === 'rtsp') return 0.0035;
+      if (medium === 'wifi_5g' || medium === 'tailscale' || medium === 'wifi' || medium === 'ha_mobile' || medium === 'http') return 0.002;
+      if (medium === 'wifi_2g' || medium === 'cloud_api' || medium === 'logical' || medium === 'bluetooth' || medium === 'cast') return 0.0008;
+      return 0.0015;
+    }
+
+    function linkEdgeKey(link) {
+      if (!link) return '';
+      var sid = link.source && (link.source.id || link.source);
+      var tid = link.target && (link.target.id || link.target);
+      return String(sid) + '|' + String(tid);
+    }
+
+    function dynamicLinkParticleSpeed(link) {
+      var base = linkParticleSpeed(link);
+      if (!base) return 0;
+      var key = linkEdgeKey(link);
+      var boost = linkBoostMap[key];
+      if (!boost) return base;
+      if (performance.now() >= boost.until) {
+        delete linkBoostMap[key];
+        return base;
+      }
+      return base * boost.boost;
+    }
+
+    function liveWebSocketUrl() {
+      var host = (location.hostname && location.hostname.length) ? location.hostname : '127.0.0.1';
+      var proto = (location.protocol === 'https:') ? 'wss:' : 'ws:';
+      return proto + '//' + host + ':' + LIVE_WS_PORT;
+    }
+
+    function updateLiveStreamMeta() {
+      var meta = document.getElementById('meta');
+      if (!meta || !meta.textContent) return;
+      var tag = liveStreamConnected ? ' · live WS on' : ' · live WS off';
+      if (meta.textContent.indexOf('live WS') === -1) {
+        meta.textContent += tag;
+      } else {
+        meta.textContent = meta.textContent.replace(/ · live WS (on|off)/, tag);
+      }
+    }
+
+    function applyLiveNodeUpdate(evt) {
+      if (!evt || !evt.node_id) return;
+      var v = nodeVisuals[evt.node_id];
+      if (!v || !v.core || !v.core.material) return;
+
+      if (evt.status) v.status = evt.status;
+      if (evt.pulse) v.pulse = evt.pulse;
+      if (evt.mode) v.mode = evt.mode;
+      v.ghost = evt.status === 'offline';
+      v.liveFlashUntil = performance.now() + 480;
+      nodePingMap[evt.node_id] = { start: performance.now(), duration: 720 };
+
+      if (gData && gData.nodes) {
+        var node = gData.nodes.find(function(n) { return n.id === evt.node_id; });
+        if (node) {
+          if (evt.status) node.status = evt.status;
+          if (evt.pulse) node.pulse = evt.pulse;
+          if (evt.mode) node.mode = evt.mode;
+          if (evt.value != null && node.metrics) node.metrics.power_w = evt.value;
+        }
+      }
+
+      if (graph) graph.linkDirectionalParticleSpeed(dynamicLinkParticleSpeed);
+    }
+
+    function applyLinkTelemetry(evt) {
+      if (!evt || !evt.node_id || !gData || !gData.edges) return;
+      var boost = evt.boost || 2.5;
+      var until = performance.now() + (evt.duration_ms || 3000);
+      gData.edges.forEach(function(link) {
+        var sid = link.source && (link.source.id || link.source);
+        var tid = link.target && (link.target.id || link.target);
+        if (sid === evt.node_id || tid === evt.node_id) {
+          linkBoostMap[linkEdgeKey(link)] = { boost: boost, until: until };
+        }
+      });
+      if (graph) graph.linkDirectionalParticleSpeed(dynamicLinkParticleSpeed);
+    }
+
+    function handleLiveEvent(raw) {
+      var evt;
+      try {
+        evt = JSON.parse(raw);
+      } catch (e) {
+        return;
+      }
+      if (!evt || !evt.type) return;
+      if (evt.type === 'node_update') {
+        applyLiveNodeUpdate(evt);
+      } else if (evt.type === 'link_telemetry') {
+        applyLinkTelemetry(evt);
+        if (evt.node_id) {
+          nodePingMap[evt.node_id] = { start: performance.now(), duration: 560 };
+        }
+      }
+    }
+
+    function scheduleLiveSocketReconnect() {
+      if (liveSocketRetry) return;
+      liveSocketRetry = setTimeout(function() {
+        liveSocketRetry = null;
+        connectLiveStream();
+      }, 5000);
+    }
+
+    function connectLiveStream() {
+      if (liveSocket && (liveSocket.readyState === WebSocket.OPEN || liveSocket.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+      if (liveSocket) {
+        try { liveSocket.close(); } catch (e) { /* ignore */ }
+        liveSocket = null;
+      }
+
+      var url = liveWebSocketUrl();
+      try {
+        liveSocket = new WebSocket(url);
+      } catch (e) {
+        liveStreamConnected = false;
+        updateLiveStreamMeta();
+        scheduleLiveSocketReconnect();
+        return;
+      }
+
+      liveSocket.onopen = function() {
+        liveStreamConnected = true;
+        updateLiveStreamMeta();
+      };
+
+      liveSocket.onmessage = function(msg) {
+        handleLiveEvent(msg.data);
+      };
+
+      liveSocket.onerror = function() {
+        liveStreamConnected = false;
+        updateLiveStreamMeta();
+      };
+
+      liveSocket.onclose = function() {
+        liveStreamConnected = false;
+        liveSocket = null;
+        updateLiveStreamMeta();
+        scheduleLiveSocketReconnect();
+      };
+    }
+
+    function isWiredMedium(medium) {
+      return medium === 'ethernet' || medium === 'docker_bridge' || medium === 'portproxy' || medium === 'rtsp' || medium === 'http';
+    }
+
+    function isWirelessMedium(medium) {
+      return medium === 'wifi' || medium === 'wifi_5g' || medium === 'wifi_2g' || medium === 'tailscale' || medium === 'ha_mobile';
+    }
+
+    function linkParticleObject(link) {
+      var color = linkParticleColor(link);
+      var medium = (link && link.medium) || '';
+      if (isWiredMedium(medium)) {
+        return new THREE.Mesh(
+          new THREE.BoxGeometry(6, 6, 6),
+          new THREE.MeshBasicMaterial({ color: color, fog: false })
+        );
+      }
+      if (isWirelessMedium(medium)) {
+        return new THREE.Mesh(
+          new THREE.SphereGeometry(4, 8, 8),
+          new THREE.MeshBasicMaterial({ color: color, fog: false })
+        );
+      }
+      return new THREE.Mesh(
+        new THREE.TetrahedronGeometry(5),
+        new THREE.MeshBasicMaterial({ color: color, fog: false })
+      );
     }
 
     function buildNestTethers(scene, nodes) {
@@ -396,7 +1047,7 @@
         var geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
         var line = new THREE.Line(
           geom,
-          new THREE.LineBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.42 })
+          new THREE.LineBasicMaterial({ color: 0x9c6bcc, transparent: true, opacity: 0.22, fog: false })
         );
         line.userData = { childId: child.id, parentId: child.runs_on };
         nestTetherGroup.add(line);
@@ -458,17 +1109,7 @@
       var cam = graph.camera();
       var camDist = cam.position.distanceTo(new THREE.Vector3(0, 0, 0));
       pulseClock = performance.now() * 0.001;
-
-      if (orbitGroup) {
-        orbitGroup.children.forEach(function(ring) {
-          var hid = ring.userData.hubId;
-          var node = gData.nodes.find(function(n) { return n.id === hid; });
-          if (node && node.x != null) {
-            ring.position.set(node.x, node.y, node.z);
-            ring.rotation.y += ring.userData.spin || 0.0003;
-          }
-        });
-      }
+      syncStarfieldToCamera(cam);
 
       labelSprites.forEach(function(entry) {
         var scale = Math.max(0.85, Math.min(2.2, camDist / 280)) * (entry.baseSize / 5);
@@ -483,29 +1124,73 @@
         if (!v || !v.core || !v.core.material) return;
         var mat = v.core.material;
         var offline = v.status === 'offline';
+        var ghost = v.ghost;
+
+        if (v.group) {
+          var ping = nodePingMap[id];
+          var pingScale = 1;
+          if (ping) {
+            var pingT = (performance.now() - ping.start) / ping.duration;
+            if (pingT >= 1) delete nodePingMap[id];
+            else pingScale = 1 + Math.sin(pingT * Math.PI) * 0.18;
+          }
+          v.group.scale.set(pingScale, pingScale, pingScale);
+        }
+
+        if (v.baseColor) {
+          if (v.liveFlashUntil && performance.now() < v.liveFlashUntil) {
+            var flashT = 1 - (v.liveFlashUntil - performance.now()) / 480;
+            var flashMul = ghost ? 0.22 : (offline ? 0.38 : (1.05 + (1 - flashT) * 0.5));
+            mat.color.copy(v.baseColor).multiplyScalar(flashMul);
+            if (mat.emissive) {
+              mat.emissive.copy(v.baseColor).multiplyScalar(ghost ? 0.08 : 0.28);
+              mat.emissiveIntensity = (v.baseEmissive || 0.2) + (1 - flashT) * 0.35;
+            }
+          } else if (ghost) {
+            mat.color.copy(v.baseColor).multiplyScalar(0.18);
+            if (mat.emissive) { mat.emissive.copy(v.baseColor).multiplyScalar(0.08); mat.emissiveIntensity = 0.1; }
+          } else if (offline) {
+            mat.color.copy(v.baseColor).multiplyScalar(0.32);
+            if (mat.emissive) { mat.emissive.copy(v.baseColor).multiplyScalar(0.12); mat.emissiveIntensity = 0.15; }
+          } else if (v.pulse === 'strong') {
+            var amp = 0.12 + (v.cpuLoad || 0) / 100 * 0.08;
+            mat.color.copy(v.baseColor).multiplyScalar(0.88 + Math.sin(pulseClock * 2.8) * amp);
+            if (mat.emissive) {
+              mat.emissive.copy(v.baseColor).multiplyScalar(0.2);
+              mat.emissiveIntensity = v.baseEmissive + Math.sin(pulseClock * 2.8) * 0.18;
+            }
+          } else if (v.pulse === 'soft') {
+            mat.color.copy(v.baseColor).multiplyScalar(0.82 + Math.sin(pulseClock * 1.1) * 0.06);
+            if (mat.emissive) { mat.emissive.copy(v.baseColor).multiplyScalar(0.18); mat.emissiveIntensity = v.baseEmissive + Math.sin(pulseClock * 1.1) * 0.06; }
+          } else {
+            mat.color.copy(v.baseColor);
+            if (mat.emissive) { mat.emissive.copy(v.baseColor).multiplyScalar(0.18); mat.emissiveIntensity = v.baseEmissive; }
+          }
+        }
+        if (ghost) {
+          if (v.modeRing) v.modeRing.material.opacity = 0.08;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.1;
+          if (v.hubWire) v.hubWire.material.opacity = 0.05;
+          return;
+        }
         if (offline) {
-          mat.emissiveIntensity = v.baseGlow * 0.2;
-          if (v.modeRing) v.modeRing.material.opacity = 0.18;
-          if (v.equatorRing) v.equatorRing.material.opacity = 0.25;
-          if (v.hubWire) v.hubWire.material.opacity = 0.1;
+          if (v.modeRing) v.modeRing.material.opacity = 0.14;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.18;
+          if (v.hubWire) v.hubWire.material.opacity = 0.07;
           return;
         }
         if (v.pulse === 'strong') {
-          var amp = 0.22 + (v.cpuLoad || 0) / 100 * 0.18;
-          mat.emissiveIntensity = v.baseGlow + Math.sin(pulseClock * 2.8) * amp;
-          if (v.modeRing) v.modeRing.material.opacity = 0.42 + Math.sin(pulseClock * 2.8 + 0.5) * 0.14;
-          if (v.equatorRing) v.equatorRing.material.opacity = 0.55 + Math.sin(pulseClock * 2.8 + 0.5) * 0.12;
-          if (v.hubWire) v.hubWire.material.opacity = 0.2 + Math.sin(pulseClock * 2.8) * 0.08;
+          if (v.modeRing) v.modeRing.material.opacity = 0.22 + Math.sin(pulseClock * 2.8 + 0.5) * 0.06;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.3 + Math.sin(pulseClock * 2.8 + 0.5) * 0.08;
+          if (v.hubWire) v.hubWire.material.opacity = 0.12 + Math.sin(pulseClock * 2.8) * 0.04;
         } else if (v.pulse === 'soft') {
-          mat.emissiveIntensity = v.baseGlow + Math.sin(pulseClock * 1.1) * 0.06;
-          if (v.modeRing) v.modeRing.material.opacity = 0.38;
-          if (v.equatorRing) v.equatorRing.material.opacity = 0.48;
-          if (v.hubWire) v.hubWire.material.opacity = 0.16;
+          if (v.modeRing) v.modeRing.material.opacity = 0.2;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.28;
+          if (v.hubWire) v.hubWire.material.opacity = 0.1;
         } else {
-          mat.emissiveIntensity = v.baseGlow;
-          if (v.modeRing) v.modeRing.material.opacity = 0.45;
-          if (v.equatorRing) v.equatorRing.material.opacity = 0.58;
-          if (v.hubWire) v.hubWire.material.opacity = 0.18;
+          if (v.modeRing) v.modeRing.material.opacity = 0.22;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.32;
+          if (v.hubWire) v.hubWire.material.opacity = 0.12;
         }
       });
     }
@@ -513,99 +1198,88 @@
     function makeNodeObject(node) {
       var group = new THREE.Group();
       var r = nodeRadius(node);
-      var col = new THREE.Color(node.color || '#89b4fa');
+      var col = neonColor(node.color || '#89b4fa');
       var p = node.personality || 'sensor';
-      var storageFactor = Math.min(1.2, Math.log10((node.storage_gb || 0.1) + 1) * 0.35);
+      var isViewer = viewerDeviceId && node.id === viewerDeviceId;
+      var cageRadius = r * 1.5;
+      var cageCol = neonColor(node.border || '#00e5ff');
 
       var core = new THREE.Mesh(
-        new THREE.SphereGeometry(r, 22, 22),
-        new THREE.MeshLambertMaterial({
-          color: col, transparent: true, opacity: 0.93,
-          emissive: col, emissiveIntensity: node.glow || 0.2
+        new THREE.SphereGeometry(r, 32, 32),
+        new THREE.MeshStandardMaterial({
+          color: col.clone(),
+          emissive: col.clone().multiplyScalar(0.18),
+          emissiveIntensity: node._ghost ? 0.1 : 0.28,
+          roughness: 0.5,
+          metalness: 0.3,
+          transparent: !!node._ghost,
+          opacity: node._ghost ? 0.35 : 1,
+          fog: false
         })
       );
       group.add(core);
 
-      var modeCol = new THREE.Color(node.border || '#6c7086');
       var modeRing = new THREE.Mesh(
-        new THREE.SphereGeometry(r * 1.72, 12, 12),
-        new THREE.MeshBasicMaterial({
-          color: modeCol, transparent: true, opacity: 0.48, wireframe: true,
-          depthWrite: false
-        })
+        new THREE.IcosahedronGeometry(cageRadius, 2),
+        radarWireMaterial(cageCol, 0.5)
       );
       modeRing.renderOrder = 2;
       group.add(modeRing);
 
-      var isViewer = viewerDeviceId && node.id === viewerDeviceId;
-      var ringCol = isViewer ? new THREE.Color(0xffd54f) : modeCol;
+      var ringCol = isViewer ? neonColor('#ffee00') : neonColor(node.border || '#00e5ff');
+      var orbitScale = p === 'hub' ? 1.72 : (isViewer ? 1.64 : 1.58);
+      var tubeScale = p === 'hub' ? 0.1 : (isViewer ? 0.085 : 0.072);
       var equatorRing = new THREE.Mesh(
-        new THREE.TorusGeometry(r * (isViewer ? 1.55 : 1.38), Math.max(0.35, r * (isViewer ? 0.11 : 0.07)), 6, 40),
+        new THREE.TorusGeometry(
+          r * orbitScale,
+          Math.max(0.35, r * tubeScale),
+          16, 64
+        ),
         new THREE.MeshBasicMaterial({
-          color: ringCol, transparent: true, opacity: isViewer ? 0.88 : 0.62,
-          depthWrite: false
+          color: ringCol, transparent: true, opacity: isViewer ? 0.82 : (p === 'hub' ? 0.62 : 0.52),
+          depthWrite: false, fog: false
         })
       );
       equatorRing.rotation.x = Math.PI / 2;
       equatorRing.renderOrder = 3;
       group.add(equatorRing);
 
+      var hubWire = null;
+      if (p === 'hub') {
+        hubWire = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(r * 2.75, 2),
+          radarWireMaterial(neonColor('#ff6600'), 0.38)
+        );
+        hubWire.renderOrder = 1;
+        group.add(hubWire);
+      } else if ((p === 'workhorse' || p === 'engine') && node.runs_on) {
+        group.add(new THREE.Mesh(
+          new THREE.IcosahedronGeometry(r * 1.32, 1),
+          radarWireMaterial(neonColor('#00ccff'), 0.34)
+        ));
+      } else if (p === 'service' && node.runs_on) {
+        group.add(new THREE.Mesh(
+          new THREE.IcosahedronGeometry(r * 1.28, 1),
+          radarWireMaterial(neonColor('#ff44ff'), 0.32)
+        ));
+      }
+
       nodeVisuals[node.id] = {
         core: core,
         modeRing: modeRing,
         equatorRing: equatorRing,
-        baseGlow: node.glow || 0.2,
+        hubWire: hubWire,
+        baseColor: col.clone(),
+        baseEmissive: node._ghost ? 0.1 : 0.28,
         pulse: node.pulse || 'off',
         status: node.status || 'unknown',
-        cpuLoad: (node.metrics && node.metrics.cpu_load_pct) || 0
+        cpuLoad: (node.metrics && node.metrics.cpu_load_pct) || 0,
+        ghost: !!node._ghost,
+        group: group
       };
 
-      if (p === 'workhorse' || p === 'engine') {
-        group.add(new THREE.Mesh(
-          new THREE.SphereGeometry(r * (1.25 + storageFactor * 0.15), 18, 18),
-          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.07 })
-        ));
-        group.add(new THREE.Mesh(
-          new THREE.SphereGeometry(r * 1.55, 14, 14),
-          new THREE.MeshBasicMaterial({ color: 0x448aff, transparent: true, opacity: 0.04 })
-        ));
-        if (node.runs_on) {
-          group.add(new THREE.Mesh(
-            new THREE.SphereGeometry(r * 1.12, 12, 12),
-            new THREE.MeshBasicMaterial({ color: 0x74c7ec, transparent: true, opacity: 0.16, wireframe: true, depthWrite: false })
-          ));
-        }
-      } else if (p === 'hub') {
-        var hubWire = new THREE.Mesh(
-          new THREE.SphereGeometry(r * 3.4, 10, 10),
-          new THREE.MeshBasicMaterial({
-            color: 0xffb74d, transparent: true, opacity: 0.22, wireframe: true,
-            depthWrite: false
-          })
-        );
-        hubWire.renderOrder = 1;
-        group.add(hubWire);
-        nodeVisuals[node.id].hubWire = hubWire;
-      } else if (p === 'service') {
-        group.add(new THREE.Mesh(
-          new THREE.SphereGeometry(r * 1.3, 14, 14),
-          new THREE.MeshBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.08 })
-        ));
-        if (node.runs_on) {
-          group.add(new THREE.Mesh(
-            new THREE.SphereGeometry(r * 1.08, 10, 10),
-            new THREE.MeshBasicMaterial({ color: 0xce93d8, transparent: true, opacity: 0.14, wireframe: true, depthWrite: false })
-          ));
-        }
-      } else if (storageFactor > 0.15 && p === 'edge') {
-        group.add(new THREE.Mesh(
-          new THREE.SphereGeometry(r * (1.2 + storageFactor * 0.1), 14, 14),
-          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.06 })
-        ));
-      }
-
       if (typeof SpriteText !== 'undefined') {
-        var labelText = node.shortName || node.name;
+        var labelText = node.shortName || node.name || node.label;
         if (node.runs_on) labelText = '↳ ' + labelText;
         var spr = new SpriteText(labelText);
         if (isViewer) { spr.color = '#fff9c4'; spr.fontWeight = 'bold'; }
@@ -626,6 +1300,18 @@
         labelSprites.push({ sprite: spr, baseSize: node.labelSize || 5, nodeId: node.id });
       }
 
+      if (node._ghost && nodeVisuals[node.id]) {
+        group.traverse(function(obj) {
+          if (!obj.material) return;
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach(function(m) { m.transparent = true; m.opacity *= 0.14; });
+          } else {
+            obj.material.transparent = true;
+            obj.material.opacity *= 0.14;
+          }
+        });
+      }
+
       return group;
     }
 
@@ -637,21 +1323,22 @@
       try {
         var el = document.getElementById('g');
         graph = ForceGraph3D()(el);
-        graph.backgroundColor('#050510');
-        graph.enableNavigationControls(true);
-        graph.nodeLabel(function(n) { return n.title || n.name; });
-        graph.nodeThreeObject(makeNodeObject);
+
+        graph.backgroundColor('#000000');
+        graph.nodeLabel(function(n) { return n.shortName || n.name || (n.title || '').split('\n')[0]; });
+        graph.nodeThreeObject(function(node) { return makeNodeObject(node); });
         graph.nodeThreeObjectExtend(false);
-        graph.linkColor(function(l) { return l.color || '#556'; });
-        graph.linkWidth(function(l) { return Math.max(0.4, (l.width || 1) * 0.55); });
-        graph.linkOpacity(0.42);
+        graph.nodeRelSize(6);
+        graph.linkColor(function(l) { return l._ghost ? '#2a3040' : (l.color || '#4a6080'); });
+        graph.linkWidth(4.0);
+        graph.linkOpacity(function(l) { return l._ghost ? 0.06 : 0.25; });
         graph.linkLabel(function(l) { return (l.label || '') + (l.title ? '\n' + l.title : ''); });
-        graph.linkDirectionalArrowLength(function(l) { return l.directed ? 3 : 0; });
+        graph.linkDirectionalArrowLength(function(l) { return l.directed ? 4.5 : 0; });
         graph.linkDirectionalArrowRelPos(0.88);
         graph.linkCurvature(0.18);
-        graph.linkDirectionalParticles(function(l) { return l.directed ? 1 : 0; });
-        graph.linkDirectionalParticleWidth(1.2);
-        graph.linkDirectionalParticleSpeed(0.004);
+        graph.linkDirectionalParticles(3);
+        graph.linkDirectionalParticleThreeObject(linkParticleObject);
+        graph.linkDirectionalParticleSpeed(dynamicLinkParticleSpeed);
         graph.onNodeDragEnd(pinNode);
         graph.onNodeRightClick(unpinNode);
         graph.onNodeClick(function(node) {
@@ -664,24 +1351,32 @@
             renderDetail(node);
           }
         });
-        graph.d3Force('charge').strength(function(n) { return -120 - (n.val || 5) * 28; });
+
+        configureRenderer();
+
+        graph.d3Force('charge').strength(-4000);
         graph.d3Force('link').distance(function(l) {
           var sid = l.source.id || l.source;
           var tid = l.target.id || l.target;
           var s = gData && gData.nodes.find(function(n) { return n.id === sid; });
           var t = gData && gData.nodes.find(function(n) { return n.id === tid; });
-          if (s && t && (s.runs_on === tid || t.runs_on === sid)) return 22;
-          if (l.medium === 'docker_bridge') return 38;
-          return 100 + ((s && s.val) || 5) * 5 + ((t && t.val) || 5) * 5;
+          if (s && t && (s.runs_on === tid || t.runs_on === sid)) return 320;
+          if (l.medium === 'docker_bridge') return 500;
+          return 500 + ((s && s.val) || 5) * 12 + ((t && t.val) || 5) * 12;
         });
         graph.d3VelocityDecay(0.35);
         graph.warmupTicks(100);
         graph.cooldownTicks(180);
 
-        var scene = graph.scene();
-        scene.fog = new THREE.FogExp2(0x050510, 0.00045);
-        addStarfield(scene);
+        configureSceneLights();
 
+        var scene = graph.scene();
+        scene.fog = null;
+        graph.camera().far = 20000;
+        graph.camera().updateProjectionMatrix();
+        addStarfield(scene);
+        syncStarfieldToCamera(graph.camera());
+        graph.cameraPosition({ z: DEFAULT_CAMERA_Z });
         graph.onEngineTick(updateOrbitsLabelsPulse);
 
         sizeGraph();
@@ -707,25 +1402,22 @@
         (api.arp_discovered ? ' · LAN+' + api.arp_discovered : '') +
         ' · Glances ' + (api.glances ? 'live' : 'off') +
         (viewerDeviceName ? ' · 📍 ' + viewerDeviceName : '') +
-        ' · ' + api.nodes.length + ' bodies · ' + api.edges.length + ' links · space view';
+        ' · ' + api.nodes.length + ' bodies · ' + api.edges.length + ' links · vector HUD' +
+        (liveStreamConnected ? ' · live WS on' : ' · live WS off');
       updateViewerBanner();
 
-      gData = buildGraphData(api);
+      masterGraphData = buildGraphData(api);
+      initViewControls();
 
       if (!graph && !initGraph()) return;
       if (!graph) return;
 
-      if (orbitGroup && graph.scene()) {
-        graph.scene().remove(orbitGroup);
-        orbitGroup = null;
-      }
-      buildOrbitDecor(graph.scene(), api.orbit_hubs || ['router-gateway', 'zbook-wifi']);
-      buildNestTethers(graph.scene(), gData.nodes);
       buildViewerPin(graph.scene());
 
-      graph.graphData(gData);
+      applyViewToGraph(viewCameraPending);
+      viewCameraPending = false;
       sizeGraph();
-      setTimeout(focusCamera, 400);
+      connectLiveStream();
 
       document.getElementById('legend').innerHTML = Object.entries(api.medium_legend).map(function(entry) {
         var label = entry[1];
@@ -765,7 +1457,15 @@
       autoTimer = setInterval(function() { reloadData(false); }, REFRESH_SEC * 1000);
     }
 
-    window.addEventListener('load', function() { reloadData(false); });
+    window.reloadData = reloadData;
+    window.saveLayout = saveLayout;
+    window.releaseAll = releaseAll;
+    window.resetLayout = resetLayout;
+    window.toggleAuto = toggleAuto;
+    window.onViewToggleChange = onViewToggleChange;
+
+    if (document.readyState === 'complete') reloadData(false);
+    else window.addEventListener('load', function() { reloadData(false); });
   </script>
 </body>
 </html>

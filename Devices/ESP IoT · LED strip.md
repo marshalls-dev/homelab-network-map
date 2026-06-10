@@ -1,29 +1,29 @@
 ---
 type: device
 status: online
-mode: active
-latency_ms: 10.3
+mode: standby
+latency_ms: 32.7
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 12:06:57
+generated: 2026-06-09 23:10:49
 ---
 
 # ESP IoT · LED strip
 
-> Known LAN client
+> Helix · ESP_18FE85
 
 | Field | Value |
 |-------|-------|
 | **Reachability** | **online** |
-| **Mode** | **active** |
-| **Ping avg** | 10.3 ms |
+| **Mode** | **standby** |
+| **Ping avg** | 32.7 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.150 |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-Helix: ESP_18FE85 · Espressif
+Helix: ESP_18FE85 · F4:CF:A2:18:FE:85
 
 ## Services
 
@@ -31,4 +31,4 @@ Helix: ESP_18FE85 · Espressif
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | LAN ARP discovery |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | Helix router registry |

@@ -5,7 +5,7 @@ mode: active
 latency_ms: null
 packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-07 12:06:57
+generated: 2026-06-07 15:56:54
 ---
 
 # ZBook Basement

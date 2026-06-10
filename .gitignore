@@ -5,6 +5,7 @@ ha-token.local
 
 # Personal LAN data
 known-clients.json
+router-clients.json
 router-online.json
 extra-devices.json
 
@@ -12,6 +13,10 @@ extra-devices.json
 node-positions.json
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
+
+# Python
+__pycache__/
+*.pyc
 
 # OS / editor
 .DS_Store

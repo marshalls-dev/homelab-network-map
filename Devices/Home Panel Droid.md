@@ -2,10 +2,10 @@
 type: device
 status: online
 mode: active
-latency_ms: 66.7
+latency_ms: 86.9
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 12:06:57
+generated: 2026-06-09 23:10:49
 ---
 
 # Home Panel Droid
@@ -16,7 +16,7 @@ generated: 2026-06-07 12:06:57
 |-------|-------|
 | **Reachability** | **online** |
 | **Mode** | **active** |
-| **Ping avg** | 66.7 ms |
+| **Ping avg** | 86.9 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.113 |
 | **Tailscale** | — |

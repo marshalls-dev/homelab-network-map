@@ -1,11 +1,11 @@
 ---
 type: device
 status: online
-mode: standby
-latency_ms: 16.0
+mode: active
+latency_ms: 41.1
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 11:31:35
+generated: 2026-06-07 16:38:28
 ---
 
 # Unknown · 10.0.0.87
@@ -15,8 +15,8 @@ generated: 2026-06-07 11:31:35
 | Field | Value |
 |-------|-------|
 | **Reachability** | **online** |
-| **Mode** | **standby** |
-| **Ping avg** | 16.0 ms |
+| **Mode** | **active** |
+| **Ping avg** | 41.1 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.87 |
 | **Tailscale** | — |

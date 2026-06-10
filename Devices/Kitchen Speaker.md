@@ -1,33 +1,39 @@
 ---
 type: device
-status: unknown
-mode: unknown
-latency_ms: null
-packet_loss_pct: null
+status: online
+mode: idle
+latency_ms: 6.6
+packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 12:06:57
+generated: 2026-06-09 23:10:49
 ---
 
 # Kitchen speaker
 
-> Cast media · Robot Intercom TTS
+> Google Home Mini · Cast media · Robot Intercom TTS
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **unknown** |
-| **Mode** | **unknown** |
-| **Ping avg** | — |
-| **Packet loss** | — |
-| **Address** | — |
+| **Reachability** | **online** |
+| **Mode** | **idle** |
+| **Ping avg** | 6.6 ms |
+| **Packet loss** | 0.0% |
+| **Address** | 10.0.0.14 |
 | **Tailscale** | — |
 | **HA state** | Kitchen Speaker: off |
 
 ## Hardware
-media_player.kitchen_speaker
+Google Home Mini · media_player.kitchen_speaker
 
 ## Services
-- Google Cast
+- Google Cast :8009
 - TTS output
 
-## Connections
+## Port check
+- **8009**: open
 
+
+## Connections
+| Link | Medium | Direction | Traffic | Path | Notes |
+|------|--------|-----------|---------|------|-------|
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | Google Home Mini |

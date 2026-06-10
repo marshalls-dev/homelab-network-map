@@ -2,10 +2,10 @@
 type: device
 status: online
 mode: active
-latency_ms: 117.9
+latency_ms: 123.5
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 12:06:57
+generated: 2026-06-07 16:10:55
 ---
 
 # Fire Tablet
@@ -16,7 +16,7 @@ generated: 2026-06-07 12:06:57
 |-------|-------|
 | **Reachability** | **online** |
 | **Mode** | **active** |
-| **Ping avg** | 117.9 ms |
+| **Ping avg** | 123.5 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.182 |
 | **Tailscale** | — |

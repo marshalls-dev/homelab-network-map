@@ -1,29 +1,29 @@
 ---
 type: device
 status: online
-mode: active
-latency_ms: 46.3
+mode: standby
+latency_ms: 98.9
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 12:06:57
+generated: 2026-06-09 23:10:49
 ---
 
 # Smart Refrigerator
 
-> Helix: refrigerator
+> Helix · refrigerator
 
 | Field | Value |
 |-------|-------|
 | **Reachability** | **online** |
-| **Mode** | **active** |
-| **Ping avg** | 46.3 ms |
+| **Mode** | **standby** |
+| **Ping avg** | 98.9 ms |
 | **Packet loss** | 0.0% |
-| **Address** | 10.0.0.87 |
+| **Address** | 10.0.0.176 |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-Smart appliance Wi‑Fi
+Helix: refrigerator · 50:FD:D5:92:97:3B
 
 ## Services
 
@@ -31,4 +31,4 @@ Smart appliance Wi‑Fi
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | LAN ARP discovery |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | Helix router registry |

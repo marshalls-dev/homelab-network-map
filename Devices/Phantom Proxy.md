@@ -2,10 +2,10 @@
 type: device
 status: online
 mode: standby
-latency_ms: 39.9
+latency_ms: 38.8
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 12:06:57
+generated: 2026-06-09 23:10:49
 ---
 
 # Phantom Proxy
@@ -16,7 +16,7 @@ generated: 2026-06-07 12:06:57
 |-------|-------|
 | **Reachability** | **online** |
 | **Mode** | **standby** |
-| **Ping avg** | 39.9 ms |
+| **Ping avg** | 38.8 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.169 |
 | **Tailscale** | — |

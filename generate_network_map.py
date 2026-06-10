@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+import copy
 import json
 import math
 import os
@@ -18,6 +20,7 @@ import webbrowser
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any, Awaitable, Callable
 
 VAULT = Path(__file__).resolve().parent
 
@@ -47,7 +50,6 @@ ALWAYS_ON_IDS = frozenset(
         "homeassistant",
         "minecraft-server",
         "minecraft-phantom",
-        "zbook-webcam",
         "kitchen-speaker",
         "smart-plugs",
     }
@@ -56,8 +58,31 @@ ALWAYS_ON_IDS = frozenset(
 # Map HA device_tracker entity → one canonical graph node id.
 HA_ENTITY_CANONICAL: dict[str, str] = {
     "device_tracker.mashall_spratts_iphone": "marshall-iphone",
-    "device_tracker.homebase_macbook": "homebase-macbook",
+    "device_tracker.stephanie_clerouxs_iphone": "wife-iphone",
+    "device_tracker.homebase_macbook": "old-macbook",
     "device_tracker.home_panel_droid": "w09n-frame",
+    "device_tracker.ipad": "family-ipad",
+}
+
+# Map router-clients.json canonical_id → existing graph node ids.
+ROUTER_ID_ALIASES: dict[str, str] = {
+    "mf-mac-905": "mac-primary",
+    "zbook": "zbook-wifi",
+    "stephanie-iphone": "wife-iphone",
+    "fridge": "smart-fridge",
+    "google-home-mini": "kitchen-speaker",
+    "android-tablet": "w09n-frame",
+}
+
+# Same physical hardware, different discovery sources — merge into one graph node.
+PHYSICAL_ALIASES: dict[str, str] = {
+    "homebase-macbook": "old-macbook",
+    "zbook-webcam": "zbook-wifi",
+    "arp-10-0-0-182": "marshall-iphone",
+    "fire-tablet": "marshall-iphone",
+    "chromecast": "kitchen-speaker",
+    "qca4002": "lg-washer",
+    "qca4002-69": "lg-dryer",
 }
 
 SCANNER_DEVICE_ALIASES = {
@@ -69,6 +94,7 @@ SCANNER_DEVICE_ALIASES = {
 EXTRA_DEVICES_FILE = VAULT / "extra-devices.json"
 HA_TOKEN_FILES = (VAULT / "ha-token.local", VAULT / ".ha-token")
 KNOWN_CLIENTS_FILE = VAULT / "known-clients.json"
+ROUTER_CLIENTS_FILE = VAULT / "router-clients.json"
 HELIX_ROUTER_FILE = VAULT / "helix-router.json"
 LAN_SUBNET_PREFIX = "10.0.0."
 
@@ -90,9 +116,10 @@ DEVICES: dict[str, dict] = {
         "ips": ["10.0.0.169"],
         "tailscale": ["100.97.161.68"],
         "hardware": "HP ZBook · DESKTOP-D1H9I0P",
-        "services": ["Home Assistant :8123", "Cockpit :9090", "Glances :61208", "SMB ZBookShare :445"],
+        "services": ["Home Assistant :8123", "Cockpit :9090", "Glances :61208", "SMB ZBookShare :445", "Basement webcam · go2rtc RTSP"],
         "power_profile": "always_on",
         "probe_ports": [8123, 61208, 445],
+        "ha_entities": ["camera.172_27_128_1"],
     },
     "wsl-ubuntu": {
         "name": "WSL Ubuntu",
@@ -154,14 +181,15 @@ DEVICES: dict[str, dict] = {
         "power_profile": "active_use",
     },
     "old-macbook": {
-        "name": "Old MacBook Pro",
+        "name": "HomeBase MacBook Pro",
         "type": "client",
-        "role": "Family workstation",
+        "role": "Family workstation · Home Assistant Companion",
         "ips": ["10.0.0.8"],
         "tailscale": [],
-        "hardware": "Tests-MacBook-Pro",
-        "services": ["Migration source"],
+        "hardware": "HomeBases-MBP · Tests-MacBook-Pro",
+        "services": ["Migration source", "Home Assistant Companion"],
         "power_profile": "standby_capable",
+        "ha_entity": "device_tracker.homebase_macbook",
     },
     "w09n-frame": {
         "name": "W09N Smart Frame",
@@ -174,27 +202,17 @@ DEVICES: dict[str, dict] = {
         "power_profile": "display_always_on",
         "probe_http": "http://10.0.0.169:8123/frame-panel",
     },
-    "chromecast": {
-        "name": "Chromecast",
-        "type": "iot",
-        "role": "Cast target",
-        "ips": ["10.0.0.14"],
-        "tailscale": [],
-        "hardware": "Google Cast",
-        "services": ["Cast :8009"],
-        "power_profile": "standby_capable",
-        "probe_ports": [(8009, "tcp")],
-    },
     "kitchen-speaker": {
         "name": "Kitchen Speaker",
         "type": "iot",
-        "role": "Cast media · Robot Intercom TTS",
-        "ips": [],
+        "role": "Google Home Mini · Cast media · Robot Intercom TTS",
+        "ips": ["10.0.0.14"],
         "tailscale": [],
-        "hardware": "media_player.kitchen_speaker",
-        "services": ["Google Cast", "TTS output"],
+        "hardware": "Google Home Mini · media_player.kitchen_speaker",
+        "services": ["Google Cast :8009", "TTS output"],
         "power_profile": "standby_capable",
         "ha_entity": "media_player.kitchen_speaker",
+        "probe_ports": [(8009, "tcp")],
     },
     "smart-plugs": {
         "name": "Tuya Smart Plugs",
@@ -209,21 +227,8 @@ DEVICES: dict[str, dict] = {
             "switch.plug_1_socket_1",
             "switch.plug_2_socket_1",
             "switch.plug_3_socket_1",
+            "switch.plug_4_socket_1",
         ],
-    },
-    "zbook-webcam": {
-        "name": "ZBook Webcam",
-        "type": "iot",
-        "role": "Basement camera feed · go2rtc in WSL",
-        "runs_on": "wsl-ubuntu",
-        "ips": ["172.27.128.1"],
-        "tailscale": [],
-        "hardware": "go2rtc · camera.172_27_128_1",
-        "services": ["RTSP", "HA picture-glance"],
-        "power_profile": "always_on",
-        "ha_entity": "camera.172_27_128_1",
-        "lan_routable": False,
-        "infer_from": ["homeassistant"],
     },
 }
 
@@ -232,7 +237,7 @@ CONNECTIONS: list[dict] = [
     {"from": "router-gateway", "to": "mac-primary", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Daily driver Mac"},
     {"from": "router-gateway", "to": "old-macbook", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Family Mac"},
     {"from": "router-gateway", "to": "w09n-frame", "medium": "wifi_2g", "traffic": "routing", "direction": "bidirectional", "note": "Frame on 2.4 GHz SSID"},
-    {"from": "router-gateway", "to": "chromecast", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Cast discovery"},
+    {"from": "router-gateway", "to": "kitchen-speaker", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Google Home Mini"},
     {"from": "router-gateway", "to": "smart-plugs", "medium": "wifi_2g", "traffic": "routing", "direction": "bidirectional", "note": "Tuya Wi-Fi plugs"},
     {"from": "zbook-wifi", "to": "wsl-ubuntu", "medium": "docker_bridge", "traffic": "management", "direction": "bidirectional", "note": "Hyper-V virtual switch"},
     {"from": "zbook-wifi", "to": "homeassistant", "medium": "portproxy", "traffic": "data", "direction": "bidirectional", "note": ":8123 LAN bridge"},
@@ -248,20 +253,40 @@ CONNECTIONS: list[dict] = [
     {"from": "w09n-frame", "to": "zbook-wifi", "medium": "wifi_2g", "traffic": "data", "direction": "downstream", "note": "HTTP to HA portproxy"},
     {"from": "homeassistant", "to": "kitchen-speaker", "medium": "cast", "traffic": "control", "direction": "downstream", "note": "TTS · media control"},
     {"from": "homeassistant", "to": "smart-plugs", "medium": "cloud_api", "traffic": "control", "direction": "downstream", "note": "Tuya integration"},
-    {"from": "homeassistant", "to": "chromecast", "medium": "cast", "traffic": "control", "direction": "downstream", "note": "Cast discovery"},
-    {"from": "chromecast", "to": "kitchen-speaker", "medium": "cast", "traffic": "data", "direction": "downstream", "note": "Speaker group / Cast route"},
-    {"from": "zbook-webcam", "to": "homeassistant", "medium": "rtsp", "traffic": "upstream", "note": "Camera stream to HA"},
-    {"from": "zbook-webcam", "to": "wsl-ubuntu", "medium": "docker_bridge", "traffic": "upstream", "note": "go2rtc in WSL"},
-    {"from": "zbook-webcam", "to": "zbook-wifi", "medium": "logical", "traffic": "upstream", "note": "Host camera passthrough"},
+    {"from": "zbook-wifi", "to": "homeassistant", "medium": "rtsp", "traffic": "upstream", "note": "Basement webcam via go2rtc"},
 ]
 
 HA_ENTITIES = {
     "switch.plug_1_socket_1": "Plug 1 · Desk",
     "switch.plug_2_socket_1": "Plug 2 · Shed",
     "switch.plug_3_socket_1": "Plug 3 · Command Central",
+    "switch.plug_4_socket_1": "Plug 4",
     "media_player.kitchen_speaker": "Kitchen Speaker",
     "camera.172_27_128_1": "Basement Webcam",
 }
+
+# Diagnostic fallback matrix — broad HA smart-plug / outlet entity matching (not Tuya-only).
+PLUG_ENTITY_MATCH_RULES: list[dict[str, Any]] = [
+    {"rule": "domain", "match": ("switch.", "light."), "weight": 1},
+    {"rule": "device_class", "match": ("outlet",), "weight": 3},
+    {"rule": "entity_regex", "match": (r"plug[_\-\d]", r"socket[_\-\d]", r"smart[_\-]?plug", r"outlet"), "weight": 3},
+    {"rule": "keyword", "match": ("plug", "outlet", "strip", "socket", "smart_plug", "tuya", "gosund", "kasa"), "weight": 2},
+]
+
+PLUG_ENTITY_EXCLUDE_KEYWORDS = (
+    "flightradar",
+    "api_data",
+    "fetching",
+    "dryer",
+    "washer",
+    "relay",
+    "automation",
+    "template",
+    "integration",
+    "rest_command",
+    "input_boolean",
+    "scene.",
+)
 
 
 def run(cmd: list[str], timeout: int = 8) -> str:
@@ -470,7 +495,7 @@ def _merge_tracker_into_lan_device(devices: dict[str, dict], tracker_name: str, 
             return any(x in name_l or x in entity_l for x in ("mashall", "marshall", "spratt"))
         if did == "family-ipad":
             return "ipad" in name_l or ("ipad" in entity_l and "iphone" not in entity_l)
-        if did == "homebase-macbook":
+        if did == "old-macbook":
             return "homebase" in name_l or "homebase" in entity_l
         if did == "home-panel-droid":
             return "panel" in name_l or "droid" in name_l or "home_panel" in entity_l
@@ -480,7 +505,7 @@ def _merge_tracker_into_lan_device(devices: dict[str, dict], tracker_name: str, 
         "wife-iphone",
         "marshall-iphone",
         "family-ipad",
-        "homebase-macbook",
+        "old-macbook",
         "home-panel-droid",
     ):
         if did in devices and not devices[did].get("ha_entity") and matches(did):
@@ -500,6 +525,235 @@ def _merge_tracker_into_lan_device(devices: dict[str, dict], tracker_name: str, 
             d["ha_entity"] = entity_id
             return did
     return None
+
+
+def is_ha_smart_plug_entity(entity_id: str, attrs: dict | None) -> bool:
+    """Return True when an HA switch/light entity represents a smart plug or outlet."""
+    if not entity_id or "." not in entity_id:
+        return False
+    domain = entity_id.split(".", 1)[0] + "."
+    if domain not in ("switch.", "light."):
+        return False
+    attrs = attrs or {}
+    friendly = str(attrs.get("friendly_name") or "")
+    device_class = str(attrs.get("device_class") or "").lower()
+    blob = f"{entity_id} {friendly} {device_class}".lower()
+
+    if any(ex in blob for ex in PLUG_ENTITY_EXCLUDE_KEYWORDS):
+        if device_class != "outlet" and not re.search(r"plug[_\-\d]|socket[_\-\d]", entity_id, re.I):
+            return False
+
+    score = 0
+    for rule in PLUG_ENTITY_MATCH_RULES:
+        kind = rule["rule"]
+        weight = int(rule.get("weight", 1))
+        targets = rule["match"]
+        if kind == "domain" and domain in targets:
+            score += weight
+        elif kind == "device_class" and device_class in targets:
+            score += weight
+        elif kind == "keyword" and any(kw in blob for kw in targets):
+            score += weight
+        elif kind == "entity_regex" and any(re.search(pat, entity_id, re.I) for pat in targets):
+            score += weight
+
+    if device_class == "outlet":
+        return True
+    if re.search(r"plug[_\-\d]|socket[_\-\d]", entity_id, re.I):
+        return True
+    return score >= 3
+
+
+def canonical_plug_device_id(entity_id: str, friendly_name: str) -> str:
+    match = re.search(r"plug[_\-]?(\d+)", entity_id, re.I)
+    if match:
+        return f"plug-{match.group(1)}"
+    slug = slug_device_id(friendly_name or entity_id.split(".", 1)[-1])
+    return f"plug-{slug}"
+
+
+def format_plug_display_name(entity_id: str, attrs: dict | None) -> str:
+    """Human-readable per-plug label for graph nodes (never the aggregate 'Tuya Plugs' string)."""
+    if entity_id in HA_ENTITIES:
+        return HA_ENTITIES[entity_id]
+    attrs = attrs or {}
+    raw = str(attrs.get("friendly_name") or entity_id.split(".", 1)[-1].replace("_", " "))
+    match = re.search(r"plug[_\s\-]*(\d+)", raw, re.I)
+    if match:
+        plug_num = match.group(1)
+        suffix = re.sub(r"plug[_\s\-]*\d+[_\s\-]*", "", raw, flags=re.I).strip(" -_")
+        suffix = re.sub(r"socket\s*\d+", "", suffix, flags=re.I).strip(" -_")
+        if suffix and suffix.lower() not in ("socket", "socket 1", ""):
+            return f"Plug {plug_num} · {suffix.title()}"
+        return f"Plug {plug_num}"
+    return raw.title()
+
+
+def resolve_plug_network_attachment(
+    attrs: dict,
+    by_ip: dict[str, dict],
+    by_mac: dict[str, dict],
+    arp: dict[str, str],
+) -> tuple[str | None, str | None, str]:
+    """IP/MAC match fallback matrix for cloud-only Tuya plugs."""
+    ip = attrs.get("ip") or attrs.get("ipv4")
+    if isinstance(ip, list):
+        ip = ip[0] if ip else None
+    ip = str(ip).strip() if ip else None
+    mac = normalize_mac(attrs.get("mac") or attrs.get("mac_address"))
+
+    if mac and mac in by_mac:
+        reg_ip = str((by_mac[mac].get("ip") or "")).strip() or None
+        return reg_ip or ip, mac, "router_mac_registry"
+    if ip and ip in by_ip:
+        return ip, mac or normalize_mac(by_ip[ip].get("mac")), "router_ip_registry"
+    if mac:
+        for arp_ip, arp_mac in arp.items():
+            if normalize_mac(arp_mac) == mac:
+                return arp_ip, mac, "arp_mac"
+    if ip and ip in arp:
+        return ip, normalize_mac(arp.get(ip)) or mac, "arp_ip"
+    if ip:
+        return ip, mac, "ha_attribute_ip"
+    return None, mac or None, "ha_cloud_only"
+
+
+def tether_plug_connections(
+    did: str,
+    connections: list[dict],
+    *,
+    attachment: str,
+    note_suffix: str,
+) -> None:
+    existing = {(c["from"], c["to"], c.get("medium", "")) for c in connections}
+
+    def add(fr: str, to: str, medium: str, note: str) -> None:
+        key = (fr, to, medium)
+        if key in existing:
+            return
+        connections.append(
+            {
+                "from": fr,
+                "to": to,
+                "medium": medium,
+                "traffic": "control" if medium == "cloud_api" else "routing",
+                "direction": "bidirectional",
+                "note": note,
+            }
+        )
+        existing.add(key)
+
+    if attachment in ("router_mac_registry", "router_ip_registry", "arp_mac", "arp_ip", "ha_attribute_ip"):
+        add("router-gateway", did, "wifi_2g", f"Smart plug · LAN Wi‑Fi · {note_suffix}")
+    else:
+        add("router-gateway", did, "wifi_2g", f"Smart plug · cloud IoT (no LAN IP) · {note_suffix}")
+        add("homeassistant", did, "cloud_api", f"Tuya / HA cloud control · {note_suffix}")
+
+
+def expand_ha_smart_plugs(
+    devices: dict[str, dict],
+    connections: list[dict],
+    ha_states: dict[str, dict],
+    arp: dict[str, str] | None = None,
+) -> tuple[int, list[dict]]:
+    """Discover every HA smart plug/outlet and materialize one graph node per plug."""
+    if not ha_states:
+        return 0, []
+
+    arp = arp or {}
+    by_ip, by_mac = load_client_labels()
+    mapped_entities = {
+        d.get("ha_entity")
+        for d in devices.values()
+        if d.get("ha_entity")
+    }
+    mapped_entities |= {e for d in devices.values() for e in d.get("ha_entities", [])}
+
+    diagnostics: list[dict] = []
+    discovered_ids: list[str] = []
+    all_entities: list[str] = []
+
+    plug_candidates = [
+        (eid, row)
+        for eid, row in ha_states.items()
+        if is_ha_smart_plug_entity(eid, row.get("attributes") or {})
+    ]
+
+    for entity_id, row in sorted(plug_candidates):
+        attrs = row.get("attributes") or {}
+        friendly = format_plug_display_name(entity_id, attrs)
+        state = str(row.get("state", "unknown"))
+        did = canonical_plug_device_id(entity_id, friendly)
+        ip, mac, attachment = resolve_plug_network_attachment(attrs, by_ip, by_mac, arp)
+        all_entities.append(entity_id)
+
+        diag = {
+            "entity_id": entity_id,
+            "node_id": did,
+            "friendly_name": friendly,
+            "state": state,
+            "attachment": attachment,
+            "ip": ip,
+            "mac": mac,
+            "included": True,
+            "reason": "matched_plug_rules",
+        }
+        diagnostics.append(diag)
+
+        if did in devices and devices[did].get("ha_entity") not in (None, entity_id):
+            existing_ent = devices[did].get("ha_entity")
+            did = f"{did}-{slug_device_id(entity_id.split('.', 1)[1])}"
+            diag["node_id"] = did
+            diag["reason"] = f"deduped_from_{existing_ent}"
+
+        online: bool | None
+        if state == "unavailable":
+            online = False
+        elif state in ("on", "off"):
+            online = True
+        else:
+            online = None
+
+        devices[did] = {
+            "name": friendly,
+            "type": "iot",
+            "role": "Smart plug · Home Assistant outlet",
+            "ips": [ip] if ip else [],
+            "mac": mac,
+            "tailscale": [],
+            "hardware": " ".join(x for x in (attrs.get("manufacturer"), attrs.get("model")) if x)
+            or "Wi‑Fi smart plug",
+            "services": [entity_id],
+            "power_profile": "switchable",
+            "ha_entity": entity_id,
+            "ha_plug": True,
+            "discovered": True,
+            "online": online,
+            "mode": state if state in ("on", "off", "unavailable") else "unknown",
+            "ha_detail": f"{friendly}: {state}",
+        }
+        DEVICE_CAPACITY[did] = {
+            "ram_gb": 0.016,
+            "storage_gb": 0.008,
+            "compute": 0.03,
+            "short": friendly[:16],
+            "personality": "sensor",
+            "capacity_note": f"Smart plug · {state} · {attachment}",
+        }
+        tether_plug_connections(did, connections, attachment=attachment, note_suffix=friendly)
+        mapped_entities.add(entity_id)
+        discovered_ids.append(did)
+
+    if discovered_ids:
+        if "smart-plugs" in devices:
+            devices["smart-plugs"]["ha_entities"] = sorted(set(all_entities))
+        connections[:] = [
+            c for c in connections if c.get("from") != "smart-plugs" and c.get("to") != "smart-plugs"
+        ]
+        devices.pop("smart-plugs", None)
+        DEVICE_CAPACITY.pop("smart-plugs", None)
+
+    return len(discovered_ids), diagnostics
 
 
 def expand_ha_devices(devices: dict[str, dict], connections: list[dict], ha_states: dict[str, dict]) -> int:
@@ -664,6 +918,208 @@ def parse_arp_table(subnet_prefix: str = LAN_SUBNET_PREFIX) -> dict[str, str]:
     return clients
 
 
+def normalize_mac(mac: str | None) -> str:
+    if not mac:
+        return ""
+    return str(mac).lower().replace("-", ":")
+
+
+def resolve_router_canonical_id(raw_id: str | None) -> str:
+    cid = slug_device_id(raw_id or "unknown")
+    return ROUTER_ID_ALIASES.get(cid, cid)
+
+
+def router_personality(hostname: str, canonical_id: str) -> str:
+    host = hostname.lower()
+    cid = canonical_id.lower()
+    if any(x in host or x in cid for x in ("esp_", "esp-", "ct-", "bulb", "led", "plug", "fridge", "refrigerator", "qca")):
+        return "sensor"
+    if any(x in host or x in cid for x in ("iphone", "ipad", "mac", "xbox", "galaxy", "android", "tablet")):
+        return "edge"
+    if "mini" in host or "speaker" in cid:
+        return "sensor"
+    return "edge"
+
+
+def load_router_client_entries() -> list[dict]:
+    if not ROUTER_CLIENTS_FILE.exists():
+        return []
+    try:
+        data = json.loads(ROUTER_CLIENTS_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    rows = data.get("devices") if isinstance(data, dict) else data
+    if not isinstance(rows, list):
+        return []
+    return [row for row in rows if isinstance(row, dict) and row.get("mac")]
+
+
+def load_router_client_labels() -> tuple[dict[str, dict], dict[str, dict]]:
+    """Build by_mac / by_ip lookup tables from router-clients.json (authoritative)."""
+    by_ip: dict[str, dict] = {}
+    by_mac: dict[str, dict] = {}
+    helix = load_helix_hints()
+    for row in load_router_client_entries():
+        mac = normalize_mac(row.get("mac"))
+        ip = str(row.get("ip") or "").strip()
+        if not mac:
+            continue
+        hostname = str(row.get("hostname") or mac)
+        did = resolve_router_canonical_id(row.get("canonical_id") or hostname)
+        hint = helix.get(hostname, {}) if isinstance(helix.get(hostname), dict) else {}
+        name = hint.get("name") or hostname.replace("_", " ").replace("-", " ")
+        short = hint.get("short") or name[:16]
+        personality = hint.get("personality") or router_personality(hostname, did)
+        band = row.get("band")
+        band_label = f"{band} GHz" if band else "Wi‑Fi"
+        spec = {
+            "id": did,
+            "name": name,
+            "short": short,
+            "personality": personality,
+            "hardware": f"Helix: {hostname} · {mac.upper()}",
+            "role": f"Helix · {hostname} · {band_label}",
+            "router_registry": True,
+            "router_online": bool(row.get("online")),
+            "router_hostname": hostname,
+            "router_export": row.get("exported"),
+        }
+        if not row.get("online"):
+            spec["stale"] = True
+        by_mac[mac] = spec
+        if ip:
+            by_ip[ip] = spec
+    return by_ip, by_mac
+
+
+def load_client_labels() -> tuple[dict[str, dict], dict[str, dict]]:
+    """Router registry first; known-clients.json fills gaps only."""
+    by_ip, by_mac = load_router_client_labels()
+    leg_ip, leg_mac = load_known_client_labels()
+    for mac, spec in leg_mac.items():
+        by_mac.setdefault(normalize_mac(mac), spec)
+    for ip, spec in leg_ip.items():
+        by_ip.setdefault(str(ip), spec)
+    return by_ip, by_mac
+
+
+def apply_router_registry(devices: dict[str, dict], connections: list[dict]) -> int:
+    """Seed / update graph nodes from router-clients.json before ARP discovery."""
+    entries = load_router_client_entries()
+    if not entries:
+        return 0
+    helix = load_helix_hints()
+    touched: set[str] = set()
+    merged_rows: dict[str, list[dict]] = {}
+    for row in entries:
+        did = resolve_router_canonical_id(row.get("canonical_id") or row.get("hostname"))
+        merged_rows.setdefault(did, []).append(row)
+
+    for did, rows in merged_rows.items():
+        online_rows = [r for r in rows if r.get("online")]
+        primary = online_rows[0] if online_rows else rows[0]
+        hostname = str(primary.get("hostname") or did)
+        hint = helix.get(hostname, {}) if isinstance(helix.get(hostname), dict) else {}
+        name = hint.get("name") or devices.get(did, {}).get("name") or hostname.replace("_", " ")
+        mac = normalize_mac(primary.get("mac"))
+        ip = str(primary.get("ip") or "").strip()
+        router_online = any(r.get("online") for r in rows)
+        personality = hint.get("personality") or router_personality(hostname, did)
+
+        if did not in devices:
+            devices[did] = {
+                "name": name,
+                "type": "client" if personality == "edge" else "iot",
+                "role": f"Helix · {hostname}",
+                "ips": [ip] if ip else [],
+                "mac": mac,
+                "tailscale": [],
+                "hardware": f"Helix: {hostname} · {mac.upper()}",
+                "services": [],
+                "power_profile": "standby_capable",
+                "discovered": True,
+                "router_registry": True,
+            }
+            DEVICE_CAPACITY[did] = {
+                **DEFAULT_CAPACITY,
+                "short": hint.get("short") or name[:16],
+                "personality": personality,
+                "capacity_note": "Helix router registry",
+            }
+        else:
+            target = devices[did]
+            if ip and ip not in target.setdefault("ips", []):
+                target["ips"].append(ip)
+            if mac and not target.get("mac"):
+                target["mac"] = mac
+            target["router_registry"] = True
+            if hint.get("name"):
+                target["name"] = hint["name"]
+
+        d = devices[did]
+        d["router_registry"] = True
+        d["router_online"] = router_online
+        d["router_hostname"] = hostname
+        d["router_macs"] = sorted({normalize_mac(r.get("mac")) for r in rows if r.get("mac")})
+        if not router_online:
+            d["stale"] = True
+
+        has_router = any(c.get("from") == "router-gateway" and c.get("to") == did for c in connections)
+        if not has_router:
+            connections.append(
+                {
+                    "from": "router-gateway",
+                    "to": did,
+                    "medium": "wifi_5g" if str(primary.get("band")) == "5" else "wifi",
+                    "traffic": "routing",
+                    "direction": "bidirectional",
+                    "note": "Helix router registry",
+                }
+            )
+        touched.add(did)
+
+    return len(touched)
+
+
+def enrich_devices_from_router_mac(devices: dict[str, dict], arp: dict[str, str]) -> None:
+    """Attach current ARP IP when MAC matches router registry, even if DHCP changed."""
+    mac_to_ip = {normalize_mac(mac): ip for ip, mac in arp.items()}
+    _, by_mac = load_router_client_labels()
+    for mac, spec in by_mac.items():
+        did = spec.get("id")
+        if not did or did not in devices:
+            continue
+        ip = mac_to_ip.get(mac)
+        if ip and ip not in devices[did].setdefault("ips", []):
+            devices[did]["ips"].append(ip)
+        if ip:
+            devices[did]["lan_arp"] = True
+            devices[did]["mac"] = mac
+
+
+def report_router_validation(devices: dict[str, dict], ha_states: dict[str, dict]) -> list[str]:
+    warnings: list[str] = []
+    entries = load_router_client_entries()
+    if not entries:
+        warnings.append("router-clients.json not found — using ARP + known-clients only")
+        return warnings
+    by_mac, _ = load_router_client_labels()
+    for row in entries:
+        if not row.get("online"):
+            continue
+        did = resolve_router_canonical_id(row.get("canonical_id"))
+        if did not in devices:
+            warnings.append(f"Router online device {row.get('hostname')} ({did}) missing from graph")
+    for did, d in devices.items():
+        ent = d.get("ha_entity") or ""
+        if not ent.startswith("device_tracker."):
+            continue
+        if d.get("router_registry") and not d.get("ips"):
+            label = d.get("name", did)
+            warnings.append(f"HA tracker {label} has no LAN IP — Companion/GPS only")
+    return warnings
+
+
 def load_helix_hints() -> dict[str, dict]:
     if not HELIX_ROUTER_FILE.exists():
         return {}
@@ -742,11 +1198,12 @@ def enrich_ha_ips_from_arp(devices: dict[str, dict], arp: dict[str, str]) -> Non
 def discover_lan_clients(devices: dict[str, dict], connections: list[dict]) -> tuple[int, list[str], dict[str, str]]:
     """Add router-linked nodes for ARP-visible LAN clients not already mapped."""
     known_ips = {ip for d in devices.values() for ip in d.get("ips", []) if ip}
-    by_ip, by_mac = load_known_client_labels()
+    by_ip, by_mac = load_client_labels()
     arp = parse_arp_table()
     arp = load_router_active_ips(arp)
     apply_helix_mac_hints(arp, by_ip, by_mac)
     enrich_ha_ips_from_arp(devices, arp)
+    enrich_devices_from_router_mac(devices, arp)
     known_ips = {ip for d in devices.values() for ip in d.get("ips", []) if ip}
     added = 0
     unlabeled: list[str] = []
@@ -759,7 +1216,7 @@ def discover_lan_clients(devices: dict[str, dict], connections: list[dict]) -> t
                     if not d.get("mac"):
                         d["mac"] = mac
             continue
-        spec = by_ip.get(ip) or by_mac.get(mac)
+        spec = by_mac.get(mac) or by_ip.get(ip)
         if spec and spec.get("stale"):
             continue
         if spec:
@@ -774,7 +1231,7 @@ def discover_lan_clients(devices: dict[str, dict], connections: list[dict]) -> t
             did = f"arp-{ip.replace('.', '-')}"
             short = ip.split(".")[-1]
             personality = "sensor"
-            role = "Unlabeled LAN client · add to known-clients.json"
+            role = "Unlabeled LAN client · add to router-clients.json"
             hardware = f"MAC {mac}"
             unlabeled.append(f"{ip}  {mac}")
 
@@ -782,6 +1239,24 @@ def discover_lan_clients(devices: dict[str, dict], connections: list[dict]) -> t
             devices[did].setdefault("ips", [])
             if ip not in devices[did]["ips"]:
                 devices[did]["ips"].append(ip)
+            devices[did]["lan_arp"] = True
+            if mac and not devices[did].get("mac"):
+                devices[did]["mac"] = mac
+            has_router = any(
+                c.get("from") == "router-gateway" and c.get("to") == did for c in connections
+            )
+            if not has_router:
+                connections.append(
+                    {
+                        "from": "router-gateway",
+                        "to": did,
+                        "medium": "wifi",
+                        "traffic": "routing",
+                        "direction": "bidirectional",
+                        "note": "LAN ARP discovery",
+                    }
+                )
+            known_ips.add(ip)
             continue
 
         devices[did] = {
@@ -833,7 +1308,7 @@ def canonical_id_for_ha(entity_id: str, name: str) -> str | None:
     if "mashall" in e or ("marshall" in n and "iphone" in n):
         return "marshall-iphone"
     if "homebase" in e or "homebase" in n:
-        return "homebase-macbook"
+        return "old-macbook"
     if "home_panel" in e or "panel droid" in n:
         return "w09n-frame"
     return None
@@ -941,6 +1416,16 @@ def consolidate_devices(
                 id_remap[did] = cid
                 break
 
+    for alias, canonical in PHYSICAL_ALIASES.items():
+        if alias not in devices or alias == canonical:
+            continue
+        if canonical not in devices:
+            devices[canonical] = dict(devices[alias])
+            devices[canonical].pop("_id", None)
+        else:
+            _merge_into_canonical(devices[canonical], devices[alias], ha_states)
+        id_remap[alias] = canonical
+
     for old, new in id_remap.items():
         if old in devices:
             del devices[old]
@@ -949,11 +1434,18 @@ def consolidate_devices(
         d["_id"] = did
         ent = d.get("ha_entity")
         if ent and ent in ha_states:
-            fn = ha_states[ent].get("attributes", {}).get("friendly_name")
-            if fn:
-                d["name"] = fn
+            attrs = ha_states[ent].get("attributes", {}) or {}
+            if d.get("ha_plug"):
+                display = format_plug_display_name(ent, attrs)
+                d["name"] = display
                 if did in DEVICE_CAPACITY:
-                    DEVICE_CAPACITY[did]["short"] = fn[:16]
+                    DEVICE_CAPACITY[did]["short"] = display[:18]
+            else:
+                fn = attrs.get("friendly_name")
+                if fn:
+                    d["name"] = fn
+                    if did in DEVICE_CAPACITY:
+                        DEVICE_CAPACITY[did]["short"] = fn[:16]
 
     rewire_connections(connections, id_remap)
     dedupe_connections(connections)
@@ -991,23 +1483,27 @@ def filter_to_active_lan(
     for did, d in devices.items():
         if did in ALWAYS_ON_IDS:
             continue
+        if d.get("router_registry"):
+            continue
         if d.get("stale") or did.endswith("-stale") or "stale arp" in d.get("name", "").lower():
             remove.add(did)
             continue
         if d.get("runs_on"):
             continue
+        if d.get("ha_plug"):
+            continue
         if not (d.get("discovered") or d.get("lan_arp") or did.startswith("arp-")):
             continue
         ips = [ip for ip in d.get("ips", []) if ip]
         if not ips:
-            if d.get("ha_entity") and did in ("marshall-iphone", "wife-iphone", "family-ipad", "homebase-macbook"):
+            if d.get("ha_entity") and did in ("marshall-iphone", "wife-iphone", "family-ipad", "old-macbook"):
                 continue
             remove.add(did)
             continue
         if not any(ip in active_ips for ip in ips):
             if d.get("ha_entity"):
                 continue
-            if (spec or {}).get("stale") or did.endswith("-stale") or "stale" in d.get("name", "").lower():
+            if d.get("stale") or did.endswith("-stale") or "stale" in d.get("name", "").lower():
                 remove.add(did)
                 continue
             remove.add(did)
@@ -1050,6 +1546,9 @@ def ensure_client_path_links(
             state = ha_states.get(ent, {}).get("state", "unknown")
             add("homeassistant", did, "ha_mobile", f"HA Companion · {state}")
 
+        if d.get("ha_plug") and "homeassistant" in devices:
+            add("homeassistant", did, "cloud_api", f"HA smart plug · {d.get('ha_entity', did)}")
+
         if on_lan and did not in ("router-gateway",) and "router-gateway" in devices:
             if d.get("type") in ("client", "iot", "network") or d.get("discovered") or d.get("lan_arp"):
                 has_router = any(
@@ -1060,6 +1559,12 @@ def ensure_client_path_links(
                 )
                 if not has_router:
                     add("router-gateway", did, "wifi", "Helix / LAN Wi‑Fi")
+        elif d.get("ha_plug") and "router-gateway" in devices:
+            has_router = any(
+                c.get("from") == "router-gateway" and c.get("to") == did for c in connections
+            )
+            if not has_router:
+                add("router-gateway", did, "wifi_2g", "Smart plug · cloud IoT fallback")
 
 
 def summarize_ha_trackers(ha_states: dict[str, dict]) -> str:
@@ -1089,6 +1594,16 @@ def device_links(devices: dict[str, dict], connections: list[dict] | None = None
 
 
 def resolve_mode(device: dict, ha_states: dict[str, dict]) -> str:
+    if device.get("ha_plug"):
+        entity = device.get("ha_entity")
+        if entity and entity in ha_states:
+            state = ha_states[entity].get("state", "unknown")
+            if state == "unavailable":
+                return "offline"
+            if state in ("on", "off"):
+                return state
+        return "unknown"
+
     if device.get("online") is False:
         return "offline"
     if device.get("online") is not True:
@@ -1176,21 +1691,25 @@ def probe_devices(
             if http["online"]:
                 devices[key]["online"] = True
 
-    for key in ("minecraft-server", "chromecast"):
+    for key in ("minecraft-server", "kitchen-speaker"):
+        if key not in devices:
+            continue
         d = devices[key]
         for spec in d.get("probe_ports", []):
             if isinstance(spec, tuple):
                 port, _ = spec
             else:
                 port = spec
-            host = zbook if key != "chromecast" else d["ips"][0]
+            host = zbook if key != "kitchen-speaker" else (d.get("ips") or [None])[0]
+            if not host:
+                continue
             open_ = tcp_probe(host, port)
             d.setdefault("ports", {})[str(port)] = open_
             if open_:
                 d["ports_open"] = True
                 d["online"] = True
 
-    for key, d in devices.items():
+    for d in devices.values():
         infer = d.get("infer_from", [])
         if not infer:
             continue
@@ -1198,6 +1717,38 @@ def probe_devices(
             d["online"] = True
         elif d.get("online") is None:
             d["online"] = False
+
+    for d in devices.values():
+        if d.get("online") is not None:
+            continue
+        ent = d.get("ha_entity") or ""
+        if not ent.startswith("device_tracker.") or not ha_states:
+            continue
+        row = ha_states.get(ent)
+        if not row:
+            continue
+        state = row.get("state")
+        if state in ("home", "not_home", "work", "office", "away"):
+            d["online"] = True
+
+    for d in devices.values():
+        if d.get("online") is not None:
+            continue
+        if d.get("router_registry") and d.get("router_online") is False:
+            d["online"] = False
+
+    for d in devices.values():
+        if d.get("online") is not None or not d.get("ha_plug"):
+            continue
+        ent = d.get("ha_entity") or ""
+        row = ha_states.get(ent) if ha_states else None
+        if not row:
+            continue
+        state = row.get("state")
+        if state == "unavailable":
+            d["online"] = False
+        elif state in ("on", "off"):
+            d["online"] = True
 
     for d in devices.values():
         ents = []
@@ -1226,7 +1777,7 @@ def probe_devices(
         src_ok = src.get("online") is True or src.get("http_ok") or src.get("ports_open")
         dst_ok = dst.get("online") is True or dst.get("http_ok") or dst.get("ports_open")
         if c["medium"] in ("docker_bridge", "portproxy", "logical") and devices.get("zbook-wifi", {}).get("online"):
-            if c["to"] in ("wsl-ubuntu", "homeassistant", "minecraft-server", "minecraft-phantom", "zbook-webcam"):
+            if c["to"] in ("wsl-ubuntu", "homeassistant", "minecraft-server", "minecraft-phantom"):
                 path_health.append({**c, "status": "up" if dst_ok or src_ok else "inferred"})
             else:
                 path_health.append({**c, "status": "up" if src_ok and dst_ok else "degraded" if src_ok or dst_ok else "down"})
@@ -1460,33 +2011,23 @@ DEVICE_CAPACITY: dict[str, dict] = {
     },
     "old-macbook": {
         "ram_gb": 8, "storage_gb": 256, "compute": 0.45,
-        "short": "Old Mac", "personality": "edge",
-        "capacity_note": "Legacy family Mac",
+        "short": "HomeBase Mac", "personality": "edge",
+        "capacity_note": "HomeBase family Mac · HA Companion",
     },
     "w09n-frame": {
         "ram_gb": 0.5, "storage_gb": 4, "compute": 0.1,
         "short": "W09N Frame", "personality": "display",
         "capacity_note": "Android 4.4 kiosk panel",
     },
-    "chromecast": {
-        "ram_gb": 0.256, "storage_gb": 0.5, "compute": 0.12,
-        "short": "Chromecast", "personality": "sensor",
-        "capacity_note": "Cast receiver",
-    },
     "kitchen-speaker": {
-        "ram_gb": 0.128, "storage_gb": 0.05, "compute": 0.08,
+        "ram_gb": 0.256, "storage_gb": 0.5, "compute": 0.12,
         "short": "Kitchen Spk", "personality": "sensor",
-        "capacity_note": "Cast speaker endpoint",
+        "capacity_note": "Google Home Mini · Cast + TTS",
     },
     "smart-plugs": {
         "ram_gb": 0.016, "storage_gb": 0.008, "compute": 0.03,
         "short": "Tuya Plugs", "personality": "sensor",
         "capacity_note": "MCU · 3× Wi-Fi switches",
-    },
-    "zbook-webcam": {
-        "ram_gb": 0.064, "storage_gb": 0.25, "compute": 0.14,
-        "short": "Webcam", "personality": "sensor",
-        "capacity_note": "RTSP stream via go2rtc",
     },
 }
 
@@ -1500,7 +2041,7 @@ GLANCES_CONTAINER_MAP = {
     "minecraft_server": "minecraft-server",
 }
 
-PULSE_STRONG = frozenset({"active", "playing", "streaming"})
+PULSE_STRONG = frozenset({"active", "playing", "streaming", "on"})
 PULSE_SOFT = frozenset({"standby", "idle", "reachable", "all_off"})
 
 
@@ -1537,14 +2078,14 @@ def _glances_largest_fs(fs_rows: list) -> tuple[float, float]:
     return _bytes_to_gb(best_size), round(best_pct, 1)
 
 
-def fetch_glances(host: str) -> dict | None:
+def fetch_glances(host: str, timeout: int = 8) -> dict | None:
     base = f"http://{host}:61208"
     for ver in (4, 3, 2):
-        mem = json_get(f"{base}/api/{ver}/mem")
-        cpu = json_get(f"{base}/api/{ver}/cpu")
-        fs = json_get(f"{base}/api/{ver}/fs")
-        quick = json_get(f"{base}/api/{ver}/quicklook")
-        containers = json_get(f"{base}/api/{ver}/containers")
+        mem = json_get(f"{base}/api/{ver}/mem", timeout=timeout)
+        cpu = json_get(f"{base}/api/{ver}/cpu", timeout=timeout)
+        fs = json_get(f"{base}/api/{ver}/fs", timeout=timeout)
+        quick = json_get(f"{base}/api/{ver}/quicklook", timeout=timeout)
+        containers = json_get(f"{base}/api/{ver}/containers", timeout=timeout)
         if not isinstance(mem, dict) or not mem.get("total"):
             continue
         storage_gb, storage_used_pct = _glances_largest_fs(fs if isinstance(fs, list) else [])
@@ -1702,6 +2243,30 @@ def tier_from_ratio(ratio: float, personality: str) -> str:
     return "asteroid"
 
 
+def spread_plug_constellation(
+    seeds: dict[str, list],
+    devices: dict[str, dict],
+    *,
+    hub_id: str = "router-gateway",
+    radius: float = 96.0,
+) -> None:
+    """Fan individual smart plugs into a visible sub-cluster so they do not stack."""
+    plug_ids = sorted(
+        did for did in devices if did.startswith("plug-") or devices[did].get("ha_plug")
+    )
+    if not plug_ids:
+        return
+    hub = seeds.get(hub_id, [0, 0, 0])
+    count = len(plug_ids)
+    for i, did in enumerate(plug_ids):
+        angle = -math.pi / 2 + (2 * math.pi * i / max(count, 1))
+        seeds[did] = [
+            round(hub[0] + radius * math.cos(angle)),
+            round(hub[1] + radius * 0.44 * math.sin(angle)),
+            round(hub[2] + radius * 0.62 * math.cos(angle * 0.7 + 0.35)),
+        ]
+
+
 def dynamic_layout_seeds(devices: dict[str, dict], base: dict[str, list]) -> dict[str, list]:
     seeds = dict(base)
     nest_offsets = {
@@ -1709,7 +2274,6 @@ def dynamic_layout_seeds(devices: dict[str, dict], base: dict[str, list]) -> dic
         "homeassistant": ("wsl-ubuntu", 34, 1.05),
         "minecraft-server": ("wsl-ubuntu", 40, 2.35),
         "minecraft-phantom": ("wsl-ubuntu", 36, 3.55),
-        "zbook-webcam": ("wsl-ubuntu", 30, 4.75),
     }
     for child, (parent, radius, angle) in nest_offsets.items():
         if child not in devices or parent not in seeds:
@@ -1732,7 +2296,102 @@ def dynamic_layout_seeds(devices: dict[str, dict], base: dict[str, list]) -> dic
             round(radius * math.sin(angle * 0.7) * 0.35),
         ]
         idx += 1
+    spread_plug_constellation(seeds, devices)
     return seeds
+
+
+HOMELAB_CORE_IDS = frozenset(
+    {"zbook-wifi", "wsl-ubuntu", "homeassistant", "minecraft-server", "minecraft-phantom", "mac-primary"}
+)
+HA_NETWORK_IDS = frozenset(
+    {
+        "zbook-wifi",
+        "homeassistant",
+        "smart-plugs",
+        "kitchen-speaker",
+        "w09n-frame",
+        "marshall-iphone",
+        "wife-iphone",
+        "family-ipad",
+        "old-macbook",
+    }
+)
+HA_MOBILE_IDS = frozenset({"marshall-iphone", "wife-iphone", "family-ipad", "old-macbook", "w09n-frame"})
+VIRTUAL_IDS = frozenset({"wsl-ubuntu", "homeassistant", "minecraft-server", "minecraft-phantom"})
+HARDWARE_IDS = frozenset(
+    {
+        "zbook-wifi",
+        "mac-primary",
+        "old-macbook",
+        "macbook-air",
+        "marshall-iphone",
+        "wife-iphone",
+        "family-ipad",
+        "w09n-frame",
+        "kitchen-speaker",
+        "xbox-one",
+        "smart-fridge",
+        "lg-washer",
+        "lg-dryer",
+        "galaxy-tab",
+    }
+)
+IOT_BELT_EXCLUDE = frozenset({"w09n-frame"})
+IOT_BELT_PREFIXES = ("esp-", "ct-", "lg-", "qca")
+
+
+def node_layer(did: str, device: dict) -> str:
+    if did == "router-gateway" or device.get("type") == "network":
+        return "network"
+    if device.get("runs_on") or did in VIRTUAL_IDS:
+        return "virtual"
+    return "physical"
+
+
+def node_clusters(did: str, device: dict, personality: str) -> list[str]:
+    clusters: list[str] = []
+    if did in HOMELAB_CORE_IDS:
+        clusters.append("homelab-core")
+    if did in HA_NETWORK_IDS or (device.get("ha_entity") or "").startswith("device_tracker."):
+        clusters.append("ha-network")
+    if did in HA_MOBILE_IDS or (device.get("ha_entity") or "").startswith("device_tracker."):
+        clusters.append("ha-mobile")
+    if did in HARDWARE_IDS:
+        clusters.append("hardware")
+    if (
+        did not in IOT_BELT_EXCLUDE
+        and (
+            personality == "sensor"
+            or device.get("type") == "iot"
+            or did.startswith(IOT_BELT_PREFIXES)
+            or did in ("smart-plugs", "smart-fridge", "xbox-one", "lg-washer", "lg-dryer")
+            or did.startswith("plug-")
+        )
+    ):
+        clusters.append("iot")
+    if device.get("type") == "client" and personality in ("edge", "display"):
+        clusters.append("personal")
+    if device.get("stale") or device.get("router_online") is False or did.endswith("-stale"):
+        clusters.append("stale")
+    return clusters or ["other"]
+
+
+def node_view_flags(did: str, device: dict, clusters: list[str]) -> dict[str, bool]:
+    layer = node_layer(did, device)
+    ha_ent = device.get("ha_entity") or ""
+    ha_ents = device.get("ha_entities") or []
+    return {
+        "hardware": did in HARDWARE_IDS or "hardware" in clusters,
+        "iot_belt": "iot" in clusters and did not in IOT_BELT_EXCLUDE,
+        "ha_network": "ha-network" in clusters
+        or did in HA_NETWORK_IDS
+        or did.startswith("plug-")
+        or device.get("ha_plug")
+        or ha_ent.startswith("device_tracker."),
+        "homelab_core": "homelab-core" in clusters,
+        "is_virtual": layer == "virtual",
+        "is_network": layer == "network",
+    }
 
 
 def nest_chain_label(did: str, devices: dict[str, dict]) -> str | None:
@@ -1777,16 +2436,26 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
     scanner_device_id = resolve_scanner_device_id(devices)
 
     nodes = []
+    individual_plug_ids = {
+        did for did in devices if did.startswith("plug-") or devices[did].get("ha_plug")
+    }
     for did, d in devices.items():
+        if did == "smart-plugs" and individual_plug_ids:
+            continue
         status = "online" if d.get("online") is True else "offline" if d.get("online") is False else "unknown"
         mode = d.get("mode", "unknown")
-        spec = caps[did]
-        cap = scores[did]
+        spec = caps.get(did, DEFAULT_CAPACITY)
+        cap = scores.get(did, capability_score(spec))
         ratio = cap / max_score if max_score else 0
         val = val_from_capability(cap, max_score)
         personality = spec.get("personality", "sensor")
         tier = tier_from_ratio(ratio, personality)
-        short = spec.get("short") or d["name"]
+        if d.get("ha_plug"):
+            short = d["name"]
+            label = d["name"]
+        else:
+            short = spec.get("short") or d["name"]
+            label = d["name"]
         ram = spec.get("ram_gb", 0)
         storage = spec.get("storage_gb", 0)
         compute_pct = int(spec.get("compute", 0) * 100)
@@ -1834,16 +2503,27 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
             glow = min(0.95, glow + (cpu_load / 100) * 0.12)
 
         pulse = pulse_level_for_mode(mode, status)
+        layer = node_layer(did, d)
+        clusters = node_clusters(did, d, personality)
+        views = node_view_flags(did, d, clusters)
         nodes.append(
             {
                 "id": did,
-                "label": d["name"],
+                "label": label,
                 "shortName": short,
                 "group": d["type"],
                 "status": status,
                 "mode": mode,
                 "tier": tier,
                 "personality": personality,
+                "layer": layer,
+                "cluster": clusters,
+                "views": views,
+                "router_online": d.get("router_online"),
+                "stale_registry": bool(
+                    d.get("stale") or d.get("router_online") is False or did.endswith("-stale")
+                ),
+                "ha_tracked": bool((d.get("ha_entity") or "").startswith("device_tracker.")),
                 "title": title,
                 "color": type_colors.get(d["type"], "#45475a"),
                 "border": mode_border.get(mode.split("_")[0], mode_border.get(mode, "#6c7086")),
@@ -1875,6 +2555,8 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
     edges = []
     seen: set[tuple[str, str, str]] = set()
     for i, c in enumerate(snapshot["connections"]):
+        if individual_plug_ids and (c["from"] == "smart-plugs" or c["to"] == "smart-plugs"):
+            continue
         key = (c["from"], c["to"], c["medium"])
         if key in seen:
             continue
@@ -1915,12 +2597,14 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
         "mac-primary": [-160, 100, 50],
         "old-macbook": [-160, -100, 50],
         "w09n-frame": [80, 160, -80],
-        "chromecast": [-80, 160, 80],
-        "kitchen-speaker": [-200, 180, 0],
+        "kitchen-speaker": [-80, 160, 80],
         "smart-plugs": [-200, -60, 100],
+        "plug-1": [-180, -90, 95],
+        "plug-2": [-210, -55, 105],
+        "plug-3": [-240, -20, 115],
+        "plug-4": [-270, 15, 125],
         "minecraft-server": [340, -100, -50],
         "minecraft-phantom": [400, -140, 0],
-        "zbook-webcam": [240, -160, -80],
     }
 
     return {
@@ -1930,12 +2614,13 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
         "viewer_index": build_viewer_index(devices),
         "ha_api": snapshot["ha_api"],
         "ha_discovered": snapshot.get("ha_discovered", 0),
+        "ha_plugs_discovered": snapshot.get("ha_plugs_discovered", 0),
+        "plug_diagnostics": snapshot.get("plug_diagnostics", []),
         "arp_discovered": snapshot.get("arp_discovered", 0),
         "glances": snapshot.get("glances"),
         "medium_legend": {k: v["label"] for k, v in MEDIUM_META.items()},
         "saved_positions": load_positions(),
         "layout_seeds": dynamic_layout_seeds(devices, base_seeds),
-        "orbit_hubs": ["router-gateway", "zbook-wifi"],
         "nodes": nodes,
         "edges": edges,
     }
@@ -1948,27 +2633,32 @@ def write_html(path: Path, payload: dict) -> None:
     path.write_text(template.replace("__NETWORK_DATA_JSON__", json_blob), encoding="utf-8")
 
 
-def generate(zbook: str, ha_token: str | None) -> dict:
+def generate(zbook: str, ha_token: str | None, *, glances_timeout: int = 8) -> dict:
     generated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ha_base = f"http://{zbook}:8123"
     ha_states = ha_fetch_states(ha_base, ha_token or "")
     connections = [dict(c) for c in CONNECTIONS]
     devices = {k: dict(v) for k, v in DEVICES.items()}
     load_extra_devices(devices, connections)
+    router_seeded = apply_router_registry(devices, connections)
     arp_added, arp_unlabeled, active_arp = discover_lan_clients(devices, connections)
     ha_added = expand_ha_devices(devices, connections, ha_states)
+    plugs_added, plug_diagnostics = expand_ha_smart_plugs(devices, connections, ha_states, active_arp)
     merged = consolidate_devices(devices, connections, ha_states, active_arp)
     device_links(devices, connections)
     snapshot = probe_devices(devices, zbook, ha_token, connections, ha_states)
     snapshot["generated"] = generated
     snapshot["ha_discovered"] = ha_added
+    snapshot["ha_plugs_discovered"] = plugs_added
+    snapshot["plug_diagnostics"] = plug_diagnostics
     snapshot["arp_discovered"] = arp_added
     snapshot["arp_unlabeled"] = arp_unlabeled
     snapshot["active_arp_count"] = len(active_arp)
     snapshot["devices_merged"] = len(merged)
-    glances = fetch_glances(zbook) if devices.get("zbook-wifi", {}).get("ports", {}).get("61208") else None
+    snapshot["router_registry"] = router_seeded
+    glances = fetch_glances(zbook, timeout=glances_timeout) if devices.get("zbook-wifi", {}).get("ports", {}).get("61208") else None
     if glances is None and tcp_probe(zbook, 61208):
-        glances = fetch_glances(zbook)
+        glances = fetch_glances(zbook, timeout=glances_timeout)
     local_metrics = fetch_local_host_metrics()
     apply_live_metrics(devices, glances, local_metrics)
     snapshot["glances"] = bool(glances)
@@ -1988,13 +2678,29 @@ def generate(zbook: str, ha_token: str | None) -> dict:
         print(f"[+] HA: {summarize_ha_trackers(ha_states)}")
         if ha_added:
             print(f"[+] Added {ha_added} device(s) from Home Assistant")
+    if plugs_added:
+        print(f"[+] Smart plugs: {plugs_added} individual node(s) from Home Assistant")
+        for row in plug_diagnostics:
+            ip_note = row.get("ip") or "no LAN IP"
+            print(
+                f"    · {row.get('friendly_name')} ({row.get('entity_id')}) "
+                f"→ {row.get('node_id')} · {row.get('state')} · {row.get('attachment')} · {ip_note}"
+            )
+    elif plug_diagnostics:
+        print("[!] Smart plug diagnostics: candidates found but none materialized")
+        for row in plug_diagnostics:
+            print(f"    · {row}")
     if arp_added:
         print(f"[+] LAN ARP: added {arp_added} client(s) from Wi‑Fi scan")
+    if router_seeded:
+        print(f"[+] Router registry: {router_seeded} device(s) from router-clients.json")
     if merged:
         print(f"[+] Merged {len(merged)} duplicate node(s) · active LAN: {len(active_arp)} IP(s)")
+    for note in report_router_validation(devices, ha_states):
+        print(f"[!] {note}")
     unlabeled = snapshot.get("arp_unlabeled") or []
     if unlabeled:
-        print("[i] Unlabeled LAN clients (match in router DHCP, then add to known-clients.json):")
+        print("[i] Unlabeled LAN clients (add to router-clients.json):")
         for row in unlabeled[:12]:
             print(f"    {row}")
         if len(unlabeled) > 12:
@@ -2002,9 +2708,522 @@ def generate(zbook: str, ha_token: str | None) -> dict:
     return snapshot
 
 
-def serve(vault: Path, zbook: str, ha_token: str | None, interval: int, bind: str) -> None:
-    generate(zbook, ha_token)
-    viewer_state = {"index": json.loads((vault / "network-data.json").read_text())["viewer_index"]}
+LIVE_WS_PORT_DEFAULT = 8766
+
+
+def devices_for_live_registry() -> dict[str, dict]:
+    devices = copy.deepcopy(DEVICES)
+    connections = copy.deepcopy(CONNECTIONS)
+    load_extra_devices(devices, connections)
+    return devices
+
+
+def build_entity_node_index(devices: dict[str, dict]) -> dict[str, str]:
+    index: dict[str, str] = dict(HA_ENTITY_CANONICAL)
+    for did, device in devices.items():
+        entity = device.get("ha_entity")
+        if entity:
+            index[entity] = did
+        for ent in device.get("ha_entities", []):
+            index[ent] = did
+    return index
+
+
+def resolve_live_node_for_entity(entity_id: str, index: dict[str, str]) -> str | None:
+    if entity_id in index:
+        return index[entity_id]
+    lowered = entity_id.lower()
+    if lowered.startswith("device_tracker."):
+        return index.get(entity_id) or HA_ENTITY_CANONICAL.get(entity_id)
+    if "plug_" in lowered or lowered.startswith(("switch.plug", "sensor.plug")):
+        match = re.search(r"plug[_\-]?(\d+)", entity_id, re.I)
+        if match:
+            return f"plug-{match.group(1)}"
+        return "smart-plugs"
+    if lowered.startswith("media_player."):
+        return index.get(entity_id) or "kitchen-speaker"
+    if lowered.startswith("camera."):
+        return index.get(entity_id) or "zbook-wifi"
+    return None
+
+
+def tracker_status_from_ha_state(state: str) -> str:
+    if state in ("unavailable", "unknown"):
+        return "offline"
+    return "online"
+
+
+def tracker_mode_from_ha_state(state: str) -> str:
+    if state == "home":
+        return "active"
+    if state == "not_home":
+        return "standby"
+    if state in ("unavailable", "unknown"):
+        return "offline"
+    return state
+
+
+def extract_power_watts(state: str, attributes: dict) -> float | None:
+    unit = (attributes.get("unit_of_measurement") or "").strip()
+    if unit in ("W", "w", "kW"):
+        try:
+            watts = float(state)
+            return watts * 1000.0 if unit == "kW" else watts
+        except (TypeError, ValueError):
+            pass
+    for key in ("current_power_w", "power", "wattage", "load_power"):
+        if key in attributes:
+            try:
+                return float(attributes[key])
+            except (TypeError, ValueError):
+                pass
+    return None
+
+
+def build_live_event_from_ha_change(
+    entity_id: str,
+    new_state: dict,
+    devices: dict[str, dict],
+    entity_index: dict[str, str],
+    live_ha_states: dict[str, dict],
+) -> list[dict]:
+    node_id = resolve_live_node_for_entity(entity_id, entity_index)
+    if not node_id or node_id not in devices:
+        return []
+
+    state_val = str(new_state.get("state", "unknown"))
+    attrs = new_state.get("attributes") or {}
+    if not isinstance(attrs, dict):
+        attrs = {}
+    live_ha_states[entity_id] = {"state": state_val, "attributes": attrs}
+
+    device = devices[node_id]
+    events: list[dict] = []
+
+    if entity_id.startswith("device_tracker."):
+        status = tracker_status_from_ha_state(state_val)
+        mode = tracker_mode_from_ha_state(state_val)
+        pulse = pulse_level_for_mode(mode, status)
+        events.append(
+            {
+                "type": "node_update",
+                "node_id": node_id,
+                "entity_id": entity_id,
+                "status": status,
+                "mode": mode,
+                "pulse": pulse,
+                "state": state_val,
+            }
+        )
+        return events
+
+    if entity_id.startswith("switch."):
+        mode = resolve_mode(device, live_ha_states)
+        status = "online" if mode != "offline" else "offline"
+        pulse = pulse_level_for_mode(mode, status)
+        events.append(
+            {
+                "type": "node_update",
+                "node_id": node_id,
+                "entity_id": entity_id,
+                "status": status,
+                "mode": mode,
+                "pulse": pulse,
+                "state": state_val,
+            }
+        )
+        if state_val == "on":
+            events.append(
+                {
+                    "type": "link_telemetry",
+                    "node_id": node_id,
+                    "entity_id": entity_id,
+                    "boost": 2.8,
+                    "duration_ms": 2800,
+                    "value": 1.0,
+                }
+            )
+        return events
+
+    if entity_id.startswith("media_player."):
+        mode = resolve_mode(device, live_ha_states)
+        status = "offline" if state_val in ("unavailable", "unknown") else "online"
+        pulse = pulse_level_for_mode(mode, status)
+        events.append(
+            {
+                "type": "node_update",
+                "node_id": node_id,
+                "entity_id": entity_id,
+                "status": status,
+                "mode": mode,
+                "pulse": pulse,
+                "state": state_val,
+            }
+        )
+        if state_val == "playing":
+            events.append(
+                {
+                    "type": "link_telemetry",
+                    "node_id": node_id,
+                    "entity_id": entity_id,
+                    "boost": 2.2,
+                    "duration_ms": 4000,
+                    "value": 1.0,
+                }
+            )
+        return events
+
+    if entity_id.startswith("sensor."):
+        watts = extract_power_watts(state_val, attrs)
+        if watts is None:
+            return []
+        mode = resolve_mode(device, live_ha_states)
+        status = "online" if device.get("online") is not False else "offline"
+        pulse = "strong" if watts >= 5 else pulse_level_for_mode(mode, status)
+        events.append(
+            {
+                "type": "node_update",
+                "node_id": node_id,
+                "entity_id": entity_id,
+                "status": status,
+                "mode": mode,
+                "pulse": pulse,
+                "state": state_val,
+                "value": round(watts, 2),
+            }
+        )
+        boost = min(4.5, 1.5 + watts / 40.0)
+        events.append(
+            {
+                "type": "link_telemetry",
+                "node_id": node_id,
+                "entity_id": entity_id,
+                "boost": round(boost, 2),
+                "duration_ms": 3200,
+                "value": round(watts, 2),
+            }
+        )
+        return events
+
+    if entity_id.startswith("camera."):
+        mode = resolve_mode(device, live_ha_states)
+        status = "online" if state_val not in ("unavailable", "unknown") else "offline"
+        pulse = pulse_level_for_mode(mode, status)
+        events.append(
+            {
+                "type": "node_update",
+                "node_id": node_id,
+                "entity_id": entity_id,
+                "status": status,
+                "mode": mode,
+                "pulse": pulse,
+                "state": state_val,
+            }
+        )
+        if mode == "streaming":
+            events.append(
+                {
+                    "type": "link_telemetry",
+                    "node_id": node_id,
+                    "entity_id": entity_id,
+                    "boost": 2.0,
+                    "duration_ms": 5000,
+                    "value": 1.0,
+                }
+            )
+        return events
+
+    mode = resolve_mode(device, live_ha_states)
+    status = "offline" if state_val in ("unavailable", "unknown", "off") else "online"
+    pulse = pulse_level_for_mode(mode, status)
+    events.append(
+        {
+            "type": "node_update",
+            "node_id": node_id,
+            "entity_id": entity_id,
+            "status": status,
+            "mode": mode,
+            "pulse": pulse,
+            "state": state_val,
+        }
+    )
+    return events
+
+
+class LiveBroadcastHub:
+    def __init__(self) -> None:
+        self._clients: set[Any] = set()
+        self._lock = asyncio.Lock()
+
+    async def register(self, websocket: Any) -> None:
+        async with self._lock:
+            self._clients.add(websocket)
+
+    async def unregister(self, websocket: Any) -> None:
+        async with self._lock:
+            self._clients.discard(websocket)
+
+    async def broadcast(self, payload: dict) -> None:
+        message = json.dumps(payload, separators=(",", ":"), ensure_ascii=True)
+        dead: list[Any] = []
+        async with self._lock:
+            clients = list(self._clients)
+        for websocket in clients:
+            try:
+                await websocket.send(message)
+            except Exception:
+                dead.append(websocket)
+        if dead:
+            async with self._lock:
+                for websocket in dead:
+                    self._clients.discard(websocket)
+
+
+async def _ha_state_changed_listener(
+    ha_ws_url: str,
+    token: str,
+    hub: LiveBroadcastHub,
+    devices: dict[str, dict],
+    entity_index: dict[str, str],
+    live_ha_states: dict[str, dict],
+) -> None:
+    import websockets
+
+    backoff = 2.0
+    msg_id = 1
+    while True:
+        try:
+            async with websockets.connect(
+                ha_ws_url,
+                ping_interval=20,
+                ping_timeout=20,
+                close_timeout=5,
+                max_size=2**20,
+            ) as ws:
+                raw = await asyncio.wait_for(ws.recv(), timeout=15)
+                hello = json.loads(raw)
+                if hello.get("type") != "auth_required":
+                    raise RuntimeError(f"Unexpected HA hello: {hello.get('type')}")
+
+                await ws.send(json.dumps({"type": "auth", "access_token": token}))
+                auth_raw = await asyncio.wait_for(ws.recv(), timeout=15)
+                auth_msg = json.loads(auth_raw)
+                if auth_msg.get("type") != "auth_ok":
+                    raise RuntimeError("Home Assistant WebSocket auth failed")
+
+                msg_id += 1
+                await ws.send(
+                    json.dumps(
+                        {
+                            "id": msg_id,
+                            "type": "subscribe_events",
+                            "event_type": "state_changed",
+                        }
+                    )
+                )
+                sub_raw = await asyncio.wait_for(ws.recv(), timeout=15)
+                sub_msg = json.loads(sub_raw)
+                if not sub_msg.get("success", False):
+                    raise RuntimeError(f"HA subscribe_events failed: {sub_msg}")
+
+                print("[+] Home Assistant live event stream connected")
+                backoff = 2.0
+
+                async for raw_event in ws:
+                    try:
+                        envelope = json.loads(raw_event)
+                    except json.JSONDecodeError:
+                        continue
+                    if envelope.get("type") != "event":
+                        continue
+                    event = envelope.get("event") or {}
+                    if event.get("event_type") != "state_changed":
+                        continue
+                    data = event.get("data") or {}
+                    entity_id = data.get("entity_id")
+                    new_state = data.get("new_state") or {}
+                    if not entity_id or not isinstance(new_state, dict):
+                        continue
+                    for live_event in build_live_event_from_ha_change(
+                        entity_id,
+                        new_state,
+                        devices,
+                        entity_index,
+                        live_ha_states,
+                    ):
+                        await hub.broadcast(live_event)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            print(f"[i] HA WebSocket reconnect in {backoff:.0f}s: {exc}")
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2.0, 60.0)
+
+
+async def _live_broadcast_server(
+    hub: LiveBroadcastHub,
+    bind: str,
+    port: int,
+    on_client: Callable[[], Awaitable[None]] | None = None,
+) -> None:
+    import websockets
+
+    backoff = 2.0
+    while True:
+        server = None
+        try:
+
+            async def client_handler(websocket: Any) -> None:
+                await hub.register(websocket)
+                if on_client:
+                    await on_client()
+                try:
+                    await websocket.wait_closed()
+                finally:
+                    await hub.unregister(websocket)
+
+            server = await websockets.serve(
+                client_handler,
+                bind,
+                port,
+                ping_interval=20,
+                ping_timeout=20,
+            )
+            print(f"[+] Live event WebSocket broadcast on {bind}:{port}")
+            backoff = 2.0
+            await server.wait_closed()
+        except asyncio.CancelledError:
+            if server is not None:
+                server.close()
+                await server.wait_closed()
+            raise
+        except Exception as exc:
+            print(f"[i] Live broadcast server restart in {backoff:.0f}s: {exc}")
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2.0, 60.0)
+        finally:
+            if server is not None:
+                server.close()
+                await server.wait_closed()
+
+
+async def _live_event_matrix_main(
+    zbook: str,
+    ha_token: str,
+    ws_bind: str,
+    ws_port: int,
+) -> None:
+    devices = devices_for_live_registry()
+    entity_index = build_entity_node_index(devices)
+    live_ha_states: dict[str, dict] = {}
+    ha_base = f"http://{zbook}:8123"
+    for entity_id, row in ha_fetch_states(ha_base, ha_token).items():
+        live_ha_states[entity_id] = {
+            "state": row.get("state", "unknown"),
+            "attributes": row.get("attributes") or {},
+        }
+    hub = LiveBroadcastHub()
+    ha_ws_url = f"ws://{zbook}:8123/api/websocket"
+
+    client_count = 0
+
+    async def on_client_connected() -> None:
+        nonlocal client_count
+        client_count += 1
+        if client_count == 1:
+            print("[+] Dashboard live stream client connected")
+
+    await asyncio.gather(
+        _ha_state_changed_listener(ha_ws_url, ha_token, hub, devices, entity_index, live_ha_states),
+        _live_broadcast_server(hub, ws_bind, ws_port, on_client_connected),
+    )
+
+
+def start_live_event_matrix(
+    zbook: str,
+    ha_token: str | None,
+    *,
+    ws_bind: str = "0.0.0.0",
+    ws_port: int = LIVE_WS_PORT_DEFAULT,
+) -> None:
+    if not ha_token:
+        print("[!] Live WebSocket stream disabled — HA token required for real-time events")
+        return
+    try:
+        import websockets  # noqa: F401
+    except ImportError:
+        print("[!] Live WebSocket stream disabled — install dependency: pip3 install websockets")
+        return
+
+    def run_async_loop() -> None:
+        try:
+            asyncio.run(_live_event_matrix_main(zbook, ha_token, ws_bind, ws_port))
+        except Exception as exc:
+            print(f"[!] Live event matrix stopped: {exc}", file=sys.stderr)
+
+    threading.Thread(
+        target=run_async_loop,
+        daemon=True,
+        name="homelab-live-ws",
+    ).start()
+
+
+def serve(
+    vault: Path,
+    zbook: str,
+    ha_token: str | None,
+    interval: int,
+    bind: str,
+    *,
+    ws_port: int = LIVE_WS_PORT_DEFAULT,
+    ws_bind: str = "0.0.0.0",
+) -> None:
+    viewer_state: dict = {"index": []}
+    gen_lock = threading.Lock()
+
+    def load_viewer_index() -> None:
+        data_path = vault / "network-data.json"
+        if not data_path.exists():
+            return
+        try:
+            viewer_state["index"] = json.loads(data_path.read_text())["viewer_index"]
+        except (json.JSONDecodeError, KeyError, OSError):
+            pass
+
+    load_viewer_index()
+    cached = (vault / "network-graph.html").exists()
+
+    def run_generate(label: str, *, glances_timeout: int = 8) -> None:
+        acquired = gen_lock.acquire(blocking=False)
+        if not acquired:
+            print(f"[i] Scan already running — skipped {label.lower()}")
+            return
+        try:
+            print(f"[*] {label}…")
+            generate(zbook, ha_token, glances_timeout=glances_timeout)
+            load_viewer_index()
+            print(f"[+] {label} complete · {datetime.now():%H:%M:%S}")
+        except Exception as exc:
+            print(f"[!] {label} failed: {exc}", file=sys.stderr)
+        finally:
+            gen_lock.release()
+
+    if cached:
+        stamp = ""
+        data_path = vault / "network-data.json"
+        if data_path.exists():
+            stamp = datetime.fromtimestamp(data_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[*] Serving cached map{f' from {stamp}' if stamp else ''} — refresh runs in background")
+        threading.Thread(
+            target=lambda: run_generate("Background refresh", glances_timeout=3),
+            daemon=True,
+        ).start()
+    else:
+        print("[*] No cached map yet — dashboard opens now; first scan runs in background (~1–2 min)")
+        threading.Thread(
+            target=lambda: run_generate("Initial scan", glances_timeout=3),
+            daemon=True,
+        ).start()
 
     class Handler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
@@ -2065,12 +3284,7 @@ def serve(vault: Path, zbook: str, ha_token: str | None, interval: int, bind: st
     def regen_loop() -> None:
         while True:
             time.sleep(interval)
-            try:
-                generate(zbook, ha_token)
-                viewer_state["index"] = json.loads((vault / "network-data.json").read_text())["viewer_index"]
-                print(f"[+] Refreshed {datetime.now():%H:%M:%S}")
-            except Exception as exc:
-                print(f"[!] Refresh failed: {exc}", file=sys.stderr)
+            run_generate("Scheduled refresh", glances_timeout=3)
 
     if interval > 0:
         threading.Thread(target=regen_loop, daemon=True).start()
@@ -2085,13 +3299,18 @@ def serve(vault: Path, zbook: str, ha_token: str | None, interval: int, bind: st
     except OSError:
         pass
 
-    print(f"[*] Serving {vault} on {bind}:{port} (refresh every {interval}s)")
+    start_live_event_matrix(zbook, ha_token, ws_bind=ws_bind, ws_port=ws_port)
+
+    print(f"[*] Serving {vault} on {bind}:{port} (topology refresh every {interval}s)")
+    print(f"[*] Live HA event stream WebSocket on {ws_bind}:{ws_port}")
     if bind in ("0.0.0.0", "::"):
         print("[*] LAN viewers (no Python/Obsidian needed — just a browser link):")
         for lip in local_ips:
             print(f"    http://{lip}:{port}/network-graph.html")
+            print(f"    ws://{lip}:{ws_port}  (live events)")
         print(f"    Tailscale: http://<this-machine-tailscale-ip>:{port}/network-graph.html")
     print(f"[*] Local: http://127.0.0.1:{port}/network-graph.html")
+    print(f"[*] Live WS: ws://127.0.0.1:{ws_port}")
     print("[*] Press Ctrl+C to stop")
     if bind in ("127.0.0.1", "localhost"):
         webbrowser.open(f"http://127.0.0.1:{port}/network-graph.html")
@@ -2108,7 +3327,9 @@ def main() -> int:
     ap.add_argument("--open", action="store_true", help="Open HTML graph in browser")
     ap.add_argument("--serve", action="store_true", help="Serve live dashboard on :8765")
     ap.add_argument("--bind", default="0.0.0.0", help="Bind address (0.0.0.0 = all LAN devices can open the link)")
-    ap.add_argument("--interval", type=int, default=30, help="Auto-regenerate seconds when serving")
+    ap.add_argument("--interval", type=int, default=30, help="Topology rescan interval when serving (live WS handles instant HA events)")
+    ap.add_argument("--ws-port", type=int, default=LIVE_WS_PORT_DEFAULT, help="Live event WebSocket broadcast port")
+    ap.add_argument("--ws-bind", default="0.0.0.0", help="Live event WebSocket bind address")
     ap.add_argument("--watch", type=int, metavar="SEC", help="Regenerate every N seconds (no server)")
     args = ap.parse_args()
 
@@ -2117,9 +3338,18 @@ def main() -> int:
     if args.serve:
         if not ha_token:
             print("[!] HA token missing — phones/tablets will NOT appear on the map")
+            print("[!] Live WebSocket event stream will NOT start without a token")
             print(f"[i] Create {VAULT / 'ha-token.local'} with your long-lived token, or:")
             print("[i]   export HOMELAB_HA_TOKEN='your-token'")
-        serve(VAULT, args.zbook, ha_token, args.interval, args.bind)
+        serve(
+            VAULT,
+            args.zbook,
+            ha_token,
+            args.interval,
+            args.bind,
+            ws_port=args.ws_port,
+            ws_bind=args.ws_bind,
+        )
         return 0
 
     print("[*] Scanning LAN from this Mac...")

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-07 12:06:57",
+  "generated": "2026-06-09 23:10:49",
   "scanner": "MF-MAC-905",
   "scanner_device_id": "mac-primary",
   "viewer_index": [
@@ -53,7 +53,7 @@
     },
     {
       "id": "mac-primary",
-      "name": "MacBook Pro (This Mac)",
+      "name": "This Mac (Primary Scanner)",
       "short": "This Mac",
       "ips": [
         "10.0.0.227"
@@ -61,8 +61,8 @@
     },
     {
       "id": "old-macbook",
-      "name": "Old MacBook Pro",
-      "short": "Old Mac",
+      "name": "HomeBase_Macbook",
+      "short": "HomeBase_Macbook",
       "ips": [
         "10.0.0.8"
       ]
@@ -76,18 +76,12 @@
       ]
     },
     {
-      "id": "chromecast",
-      "name": "Chromecast",
-      "short": "Chromecast",
-      "ips": [
-        "10.0.0.14"
-      ]
-    },
-    {
       "id": "kitchen-speaker",
       "name": "Kitchen speaker",
       "short": "Kitchen speaker",
-      "ips": []
+      "ips": [
+        "10.0.0.14"
+      ]
     },
     {
       "id": "smart-plugs",
@@ -96,19 +90,59 @@
       "ips": []
     },
     {
-      "id": "zbook-webcam",
-      "name": "ZBook Basement",
-      "short": "ZBook Basement",
+      "id": "lg-dryer",
+      "name": "LG Dryer",
+      "short": "LG Dryer",
       "ips": [
-        "172.27.128.1"
+        "10.0.0.112"
       ]
     },
     {
-      "id": "esp-da27ea",
-      "name": "ESP IoT \u00b7 plug",
-      "short": "ESP 105",
+      "id": "macbook-air",
+      "name": "Primary MacBook Air",
+      "short": "MacBook Air",
       "ips": [
-        "10.0.0.105"
+        "10.0.0.208"
+      ]
+    },
+    {
+      "id": "marshall-iphone",
+      "name": "Mashall Spratt\u2019s iPhone",
+      "short": "Mashall Spratt\u2019s",
+      "ips": [
+        "10.0.0.182"
+      ]
+    },
+    {
+      "id": "xbox-one",
+      "name": "Xbox One",
+      "short": "Xbox",
+      "ips": [
+        "10.0.0.145"
+      ]
+    },
+    {
+      "id": "lg-washer",
+      "name": "LG Washer",
+      "short": "LG Washer",
+      "ips": [
+        "10.0.0.45"
+      ]
+    },
+    {
+      "id": "smart-fridge",
+      "name": "Smart Refrigerator",
+      "short": "Fridge",
+      "ips": [
+        "10.0.0.176"
+      ]
+    },
+    {
+      "id": "wlan0-device",
+      "name": "WLAN Device",
+      "short": "wlan0",
+      "ips": [
+        "10.0.0.17"
       ]
     },
     {
@@ -116,7 +150,31 @@
       "name": "Stephanie Cl\u00e9roux\u2019s iPhone",
       "short": "Stephanie Cl\u00e9rou",
       "ips": [
+        "10.0.0.200"
+      ]
+    },
+    {
+      "id": "family-ipad",
+      "name": "iPad",
+      "short": "iPad",
+      "ips": [
         "10.0.0.142"
+      ]
+    },
+    {
+      "id": "ct-bulb",
+      "name": "Tuya Smart Bulb",
+      "short": "CT Bulb",
+      "ips": [
+        "10.0.0.106"
+      ]
+    },
+    {
+      "id": "ct-ledstrip",
+      "name": "Tuya LED Strip",
+      "short": "CT Strip",
+      "ips": [
+        "10.0.0.87"
       ]
     },
     {
@@ -128,54 +186,115 @@
       ]
     },
     {
-      "id": "fire-tablet",
-      "name": "Fire Tablet",
-      "short": "Fire tab",
+      "id": "esp-da27ea",
+      "name": "ESP IoT \u00b7 plug",
+      "short": "ESP 105",
       "ips": [
-        "10.0.0.182"
+        "10.0.0.105"
       ]
     },
     {
-      "id": "family-ipad",
-      "name": "iPad",
+      "id": "family-ipad-stale",
+      "name": "Family iPad",
       "short": "iPad",
       "ips": [
-        "10.0.0.208"
+        "10.0.0.57"
       ]
     },
     {
-      "id": "lan-device-45",
-      "name": "LAN device \u00b7 45",
-      "short": "45",
+      "id": "iphone-61",
+      "name": "iPhone-61",
+      "short": "iPhone-61",
       "ips": [
-        "10.0.0.45"
+        "10.0.0.104"
       ]
     },
     {
-      "id": "smart-fridge",
-      "name": "Smart Refrigerator",
-      "short": "Fridge",
+      "id": "unknown-7070aa",
+      "name": "70:70:aa:1c:90:48",
+      "short": "70:70:aa:1c:90:4",
       "ips": [
-        "10.0.0.87"
+        "10.0.0.68"
       ]
     },
     {
-      "id": "marshall-iphone",
-      "name": "Mashall Spratt\u2019s iPhone",
-      "short": "Mashall Spratt\u2019s",
-      "ips": []
+      "id": "esp-efaad0",
+      "name": "d0:c9:07:ef:aa:d0",
+      "short": "d0:c9:07:ef:aa:d",
+      "ips": [
+        "10.0.0.89"
+      ]
     },
     {
-      "id": "homebase-macbook",
-      "name": "HomeBase_Macbook",
-      "short": "HomeBase_Macbook",
-      "ips": []
+      "id": "esp-d65278",
+      "name": "d0:c9:07:d6:52:78",
+      "short": "d0:c9:07:d6:52:7",
+      "ips": [
+        "10.0.0.168"
+      ]
+    },
+    {
+      "id": "espressif-generic",
+      "name": "espressif",
+      "short": "espressif",
+      "ips": [
+        "10.0.0.78"
+      ]
+    },
+    {
+      "id": "esp-e2f9c4",
+      "name": "d0:c9:07:e2:f9:c4",
+      "short": "d0:c9:07:e2:f9:c",
+      "ips": [
+        "10.0.0.81"
+      ]
+    },
+    {
+      "id": "esp-da324b",
+      "name": "ESP DA324B",
+      "short": "ESP DA324B",
+      "ips": [
+        "10.0.0.58"
+      ]
+    },
+    {
+      "id": "esp-2c6b52",
+      "name": "ESP 2C6B52",
+      "short": "ESP 2C6B52",
+      "ips": [
+        "10.0.0.79",
+        "10.0.0.78"
+      ]
+    },
+    {
+      "id": "galaxy-tab",
+      "name": "Family Frame Tablet",
+      "short": "Galaxy Tab",
+      "ips": [
+        "10.0.0.30"
+      ]
+    },
+    {
+      "id": "iphone-60",
+      "name": "iPhone-60",
+      "short": "iPhone-60",
+      "ips": [
+        "10.0.0.93"
+      ]
+    },
+    {
+      "id": "iphone-54",
+      "name": "iPhone-54",
+      "short": "iPhone-54",
+      "ips": [
+        "10.0.0.59"
+      ]
     }
   ],
   "ha_api": true,
-  "ha_discovered": 5,
-  "arp_discovered": 7,
-  "glances": true,
+  "ha_discovered": 4,
+  "arp_discovered": 0,
+  "glances": false,
   "medium_legend": {
     "wifi_2g": "Wi-Fi 2.4 GHz",
     "wifi_5g": "Wi-Fi 5 GHz",
@@ -229,15 +348,10 @@
       160,
       -80
     ],
-    "chromecast": [
+    "kitchen-speaker": [
       -80,
       160,
       80
-    ],
-    "kitchen-speaker": [
-      -200,
-      180,
-      0
     ],
     "smart-plugs": [
       -200,
@@ -254,55 +368,130 @@
       -6,
       -1
     ],
-    "zbook-webcam": [
-      233,
-      -13,
-      -10
-    ],
-    "esp-da27ea": [
+    "lg-dryer": [
       87,
       123,
       63
     ],
-    "wife-iphone": [
+    "macbook-air": [
       -127,
       135,
       96
     ],
-    "esp-18fe85": [
+    "marshall-iphone": [
       -303,
       41,
       98
     ],
-    "fire-tablet": [
+    "xbox-one": [
       -286,
       -109,
       60
     ],
-    "family-ipad": [
+    "lg-washer": [
       -43,
       -210,
       -11
     ],
-    "lan-device-45": [
+    "smart-fridge": [
       282,
       -171,
       -92
     ],
-    "smart-fridge": [
+    "wlan0-device": [
       240,
       2,
       -80
     ],
-    "marshall-iphone": [
+    "wife-iphone": [
       179,
       116,
       -92
     ],
-    "homebase-macbook": [
+    "family-ipad": [
       -45,
       170,
       -69
+    ],
+    "ct-bulb": [
+      -292,
+      104,
+      -11
+    ],
+    "ct-ledstrip": [
+      -370,
+      -57,
+      65
+    ],
+    "esp-18fe85": [
+      -181,
+      -208,
+      131
+    ],
+    "esp-da27ea": [
+      94,
+      -121,
+      83
+    ],
+    "family-ipad-stale": [
+      262,
+      -47,
+      73
+    ],
+    "iphone-61": [
+      269,
+      87,
+      28
+    ],
+    "unknown-7070aa": [
+      65,
+      188,
+      -41
+    ],
+    "esp-efaad0": [
+      -236,
+      166,
+      -108
+    ],
+    "esp-d65278": [
+      -419,
+      13,
+      -147
+    ],
+    "espressif-generic": [
+      -169,
+      -94,
+      -71
+    ],
+    "esp-e2f9c4": [
+      20,
+      -151,
+      -40
+    ],
+    "esp-da324b": [
+      248,
+      -104,
+      19
+    ],
+    "esp-2c6b52": [
+      341,
+      38,
+      85
+    ],
+    "galaxy-tab": [
+      191,
+      183,
+      132
+    ],
+    "iphone-60": [
+      -136,
+      219,
+      136
+    ],
+    "iphone-54": [
+      -222,
+      50,
+      47
     ]
   },
   "orbit_hubs": [
@@ -319,7 +508,22 @@
       "mode": "active",
       "tier": "hub",
       "personality": "hub",
-      "title": "Router Gateway\\nGateway \u00b7 DHCP \u00b7 NAT\\nGateway SoC \u00b7 NAT/DHCP only\\nCapability score: 3.7 / 82.7\\nRAM 0.25 GB \u00b7 Storage 0.064 GB \u00b7 Compute 8%\\nReachable: online \u00b7 Mode: active\\nPing: 5.0 ms\\n10.0.0.1",
+      "layer": "network",
+      "cluster": [
+        "other"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": true
+      },
+      "router_online": null,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Router Gateway\\nGateway \u00b7 DHCP \u00b7 NAT\\nGateway SoC \u00b7 NAT/DHCP only\\nCapability score: 3.7 / 82.7\\nRAM 0.25 GB \u00b7 Storage 0.064 GB \u00b7 Compute 8%\\nReachable: online \u00b7 Mode: active\\nPing: 4.6 ms\\n10.0.0.1",
       "color": "#fab387",
       "border": "#a6e3a1",
       "val": 4.4,
@@ -356,7 +560,24 @@
       "mode": "active",
       "tier": "giant",
       "personality": "workhorse",
-      "title": "ZBook Server\\nHome lab host (Windows + WSL2)\\nHP ZBook \u00b7 Windows + WSL homelab host\\nCapability score: 82.7 / 82.7\\nRAM 32 GB \u00b7 Storage 1024 GB \u00b7 Compute 100%\\nReachable: online \u00b7 Mode: active\\nPing: 5.0 ms\\n10.0.0.169\\nLive: RAM use 52.8% \u00b7 Disk 0.9% \u00b7 CPU load 1.5% (glances:4)",
+      "layer": "physical",
+      "cluster": [
+        "homelab-core",
+        "ha-network",
+        "hardware"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": true,
+        "homelab_core": true,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "ZBook Server\\nHome lab host (Windows + WSL2)\\nHP ZBook \u00b7 Windows + WSL homelab host\\nCapability score: 82.7 / 82.7\\nRAM 32 GB \u00b7 Storage 1024 GB \u00b7 Compute 100%\\nReachable: online \u00b7 Mode: active\\nPing: 15.4 ms\\nBasement Webcam: idle\\n10.0.0.169",
       "color": "#89b4fa",
       "border": "#a6e3a1",
       "val": 21.0,
@@ -372,10 +593,10 @@
         "ram_gb": 32,
         "storage_gb": 1024,
         "compute_hw": 1.0,
-        "ram_used_pct": 52.8,
-        "storage_used_pct": 0.9,
-        "cpu_load_pct": 1.5,
-        "source": "glances:4"
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
       },
       "ips": [
         "10.0.0.169"
@@ -393,7 +614,22 @@
       "mode": "active",
       "tier": "planet",
       "personality": "engine",
-      "title": "WSL Ubuntu\\nDocker engine on ZBook\\nRuns on: ZBook\\nDocker VM \u00b7 shares ZBook silicon\\nCapability score: 61.8 / 82.7\\nRAM 16 GB \u00b7 Storage 400 GB \u00b7 Compute 82%\\nReachable: online \u00b7 Mode: active\\n172.27.133.182\\nLive: RAM use 52.8% \u00b7 Disk 0.9% \u00b7 CPU load 1.5% (glances:4)",
+      "layer": "virtual",
+      "cluster": [
+        "homelab-core"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": true,
+        "is_virtual": true,
+        "is_network": false
+      },
+      "router_online": null,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "WSL Ubuntu\\nDocker engine on ZBook\\nRuns on: ZBook\\nDocker VM \u00b7 shares ZBook silicon\\nCapability score: 61.8 / 82.7\\nRAM 16 GB \u00b7 Storage 400 GB \u00b7 Compute 82%\\nReachable: online \u00b7 Mode: active\\n172.27.133.182",
       "color": "#74c7ec",
       "border": "#a6e3a1",
       "val": 17.2,
@@ -409,10 +645,10 @@
         "ram_gb": 16,
         "storage_gb": 400,
         "compute_hw": 0.82,
-        "ram_used_pct": 52.8,
-        "storage_used_pct": 0.9,
-        "cpu_load_pct": 1.5,
-        "source": "glances:4"
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
       },
       "ips": [
         "172.27.133.182"
@@ -430,7 +666,23 @@
       "mode": "active",
       "tier": "moon",
       "personality": "service",
-      "title": "Home Assistant\\nAutomation hub \u00b7 Docker container\\nRuns on: ZBook \u2192 WSL\\nAutomation container \u00b7 always-on hub\\nCapability score: 29.9 / 82.7\\nRAM 4 GB \u00b7 Storage 32 GB \u00b7 Compute 35%\\nReachable: online \u00b7 Mode: active\\nPing: 24.6 ms\\n10.0.0.169\\nLive: RAM use 9.3% \u00b7 CPU load 0.0% (glances:container:homeassistant)",
+      "layer": "virtual",
+      "cluster": [
+        "homelab-core",
+        "ha-network"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": true,
+        "homelab_core": true,
+        "is_virtual": true,
+        "is_network": false
+      },
+      "router_online": null,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Home Assistant\\nAutomation hub \u00b7 Docker container\\nRuns on: ZBook \u2192 WSL\\nAutomation container \u00b7 always-on hub\\nCapability score: 29.9 / 82.7\\nRAM 4 GB \u00b7 Storage 32 GB \u00b7 Compute 35%\\nReachable: online \u00b7 Mode: active\\nPing: 44.7 ms\\n10.0.0.169",
       "color": "#cba6f7",
       "border": "#a6e3a1",
       "val": 10.8,
@@ -446,10 +698,10 @@
         "ram_gb": 4,
         "storage_gb": 32,
         "compute_hw": 0.35,
-        "ram_used_pct": 9.3,
+        "ram_used_pct": null,
         "storage_used_pct": null,
-        "cpu_load_pct": 0.0,
-        "source": "glances:container:homeassistant"
+        "cpu_load_pct": null,
+        "source": "static"
       },
       "ips": [
         "10.0.0.169"
@@ -467,7 +719,22 @@
       "mode": "standby",
       "tier": "moon",
       "personality": "service",
-      "title": "Minecraft Paper\\nJava + Bedrock cross-play \u00b7 Docker\\nRuns on: ZBook \u2192 WSL\\nPaper + Geyser \u00b7 2 GB heap\\nCapability score: 25.8 / 82.7\\nRAM 2 GB \u00b7 Storage 24 GB \u00b7 Compute 40%\\nReachable: online \u00b7 Mode: standby\\nPing: 40.0 ms\\n10.0.0.169\\nLive: RAM use 33.6% \u00b7 CPU load 2.5% (glances:container:minecraft_server)",
+      "layer": "virtual",
+      "cluster": [
+        "homelab-core"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": true,
+        "is_virtual": true,
+        "is_network": false
+      },
+      "router_online": null,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Minecraft Paper\\nJava + Bedrock cross-play \u00b7 Docker\\nRuns on: ZBook \u2192 WSL\\nPaper + Geyser \u00b7 2 GB heap\\nCapability score: 25.8 / 82.7\\nRAM 2 GB \u00b7 Storage 24 GB \u00b7 Compute 40%\\nReachable: online \u00b7 Mode: standby\\nPing: 42.1 ms\\n10.0.0.169",
       "color": "#cba6f7",
       "border": "#f9e2af",
       "val": 9.9,
@@ -483,10 +750,10 @@
         "ram_gb": 2,
         "storage_gb": 24,
         "compute_hw": 0.4,
-        "ram_used_pct": 33.6,
+        "ram_used_pct": null,
         "storage_used_pct": null,
-        "cpu_load_pct": 2.5,
-        "source": "glances:container:minecraft_server"
+        "cpu_load_pct": null,
+        "source": "static"
       },
       "ips": [
         "10.0.0.169"
@@ -504,7 +771,22 @@
       "mode": "standby",
       "tier": "asteroid",
       "personality": "beacon",
-      "title": "Phantom Proxy\\nXbox LAN discovery beacon \u00b7 Docker host net\\nRuns on: ZBook \u2192 WSL\\nUDP LAN discovery proxy\\nCapability score: 2.7 / 82.7\\nRAM 0.128 GB \u00b7 Storage 0.01 GB \u00b7 Compute 6%\\nReachable: online \u00b7 Mode: standby\\nPing: 39.9 ms\\n10.0.0.169",
+      "layer": "virtual",
+      "cluster": [
+        "homelab-core"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": true,
+        "is_virtual": true,
+        "is_network": false
+      },
+      "router_online": null,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Phantom Proxy\\nXbox LAN discovery beacon \u00b7 Docker host net\\nRuns on: ZBook \u2192 WSL\\nUDP LAN discovery proxy\\nCapability score: 2.7 / 82.7\\nRAM 0.128 GB \u00b7 Storage 0.01 GB \u00b7 Compute 6%\\nReachable: online \u00b7 Mode: standby\\nPing: 38.8 ms\\n10.0.0.169",
       "color": "#cba6f7",
       "border": "#f9e2af",
       "val": 4.1,
@@ -534,14 +816,31 @@
     },
     {
       "id": "mac-primary",
-      "label": "MacBook Pro (This Mac)",
+      "label": "This Mac (Primary Scanner)",
       "shortName": "This Mac",
       "group": "client",
       "status": "online",
       "mode": "active",
       "tier": "planet",
       "personality": "edge",
-      "title": "MacBook Pro (This Mac)\\nDaily driver \u00b7 mf-mac-905\\nMF-MAC-905 daily driver\\nCapability score: 62.3 / 82.7\\nRAM 16 GB \u00b7 Storage 512 GB \u00b7 Compute 78%\\nReachable: online \u00b7 Mode: active\\nPing: 0.3 ms\\n10.0.0.227\\nLive: RAM use 95.8% \u00b7 Disk 5.0% \u00b7 CPU load 34.6% (local)",
+      "layer": "physical",
+      "cluster": [
+        "homelab-core",
+        "hardware",
+        "personal"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": true,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "This Mac (Primary Scanner)\\nDaily driver \u00b7 mf-mac-905\\nMF-MAC-905 daily driver\\nCapability score: 62.3 / 82.7\\nRAM 16 GB \u00b7 Storage 512 GB \u00b7 Compute 78%\\nReachable: online \u00b7 Mode: active\\nPing: 0.3 ms\\n10.0.0.227\\nLive: RAM use 95.8% \u00b7 Disk 5.0% \u00b7 CPU load 34.6% (local)",
       "color": "#94e2d5",
       "border": "#a6e3a1",
       "val": 17.3,
@@ -571,16 +870,34 @@
     },
     {
       "id": "old-macbook",
-      "label": "Old MacBook Pro",
-      "shortName": "Old Mac",
+      "label": "HomeBase_Macbook",
+      "shortName": "HomeBase_Macbook",
       "group": "client",
       "status": "online",
-      "mode": "active",
+      "mode": "home",
       "tier": "planet",
       "personality": "edge",
-      "title": "Old MacBook Pro\\nFamily workstation\\nLegacy family Mac\\nCapability score: 45.6 / 82.7\\nRAM 8 GB \u00b7 Storage 256 GB \u00b7 Compute 45%\\nReachable: online \u00b7 Mode: active\\nPing: 176.2 ms\\n10.0.0.8",
+      "layer": "physical",
+      "cluster": [
+        "ha-network",
+        "ha-mobile",
+        "hardware",
+        "personal"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": true,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": true,
+      "title": "HomeBase_Macbook\\nFamily workstation \u00b7 Home Assistant Companion\\nHomeBase family Mac \u00b7 HA Companion\\nCapability score: 45.6 / 82.7\\nRAM 8 GB \u00b7 Storage 256 GB \u00b7 Compute 45%\\nReachable: online \u00b7 Mode: home\\nPing: 161.0 ms\\ndevice_tracker.homebase_macbook: home\\n10.0.0.8",
       "color": "#94e2d5",
-      "border": "#a6e3a1",
+      "border": "#6c7086",
       "val": 14.1,
       "capability": 45.6,
       "capability_pct": 55,
@@ -589,7 +906,7 @@
       "compute": 0.45,
       "labelSize": 6.9,
       "glow": 0.33,
-      "pulse": "strong",
+      "pulse": "off",
       "metrics": {
         "ram_gb": 8,
         "storage_gb": 256,
@@ -615,7 +932,24 @@
       "mode": "active",
       "tier": "asteroid",
       "personality": "display",
-      "title": "Home Panel Droid\\nHA kiosk display\\nAndroid 4.4 kiosk panel\\nCapability score: 11.2 / 82.7\\nRAM 0.5 GB \u00b7 Storage 4 GB \u00b7 Compute 10%\\nReachable: online \u00b7 Mode: active\\nPing: 66.7 ms\\ndevice_tracker.home_panel_droid: home\\n10.0.0.113",
+      "layer": "physical",
+      "cluster": [
+        "ha-network",
+        "ha-mobile",
+        "hardware"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": true,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": true,
+      "title": "Home Panel Droid\\nHA kiosk display\\nAndroid 4.4 kiosk panel\\nCapability score: 11.2 / 82.7\\nRAM 0.5 GB \u00b7 Storage 4 GB \u00b7 Compute 10%\\nReachable: online \u00b7 Mode: active\\nPing: 86.9 ms\\ndevice_tracker.home_panel_droid: home\\n10.0.0.113",
       "color": "#f9e2af",
       "border": "#a6e3a1",
       "val": 6.5,
@@ -644,17 +978,34 @@
       "nest_label": null
     },
     {
-      "id": "chromecast",
-      "label": "Chromecast",
-      "shortName": "Chromecast",
+      "id": "kitchen-speaker",
+      "label": "Kitchen speaker",
+      "shortName": "Kitchen speaker",
       "group": "iot",
       "status": "online",
-      "mode": "active",
+      "mode": "idle",
       "tier": "asteroid",
       "personality": "sensor",
-      "title": "Chromecast\\nCast target\\nCast receiver\\nCapability score: 5.7 / 82.7\\nRAM 0.256 GB \u00b7 Storage 0.5 GB \u00b7 Compute 12%\\nReachable: online \u00b7 Mode: active\\nPing: 32.1 ms\\n10.0.0.14",
+      "layer": "physical",
+      "cluster": [
+        "ha-network",
+        "hardware",
+        "iot"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": true,
+        "ha_network": true,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Kitchen speaker\\nGoogle Home Mini \u00b7 Cast media \u00b7 Robot Intercom TTS\\nGoogle Home Mini \u00b7 Cast + TTS\\nCapability score: 5.7 / 82.7\\nRAM 0.256 GB \u00b7 Storage 0.5 GB \u00b7 Compute 12%\\nReachable: online \u00b7 Mode: idle\\nPing: 6.6 ms\\nKitchen Speaker: off\\n10.0.0.14",
       "color": "#f9e2af",
-      "border": "#a6e3a1",
+      "border": "#89dceb",
       "val": 5.0,
       "capability": 5.7,
       "capability_pct": 7,
@@ -663,7 +1014,7 @@
       "compute": 0.12,
       "labelSize": 4.9,
       "glow": 0.16,
-      "pulse": "strong",
+      "pulse": "soft",
       "metrics": {
         "ram_gb": 0.256,
         "storage_gb": 0.5,
@@ -681,41 +1032,6 @@
       "nest_label": null
     },
     {
-      "id": "kitchen-speaker",
-      "label": "Kitchen speaker",
-      "shortName": "Kitchen speaker",
-      "group": "iot",
-      "status": "unknown",
-      "mode": "unknown",
-      "tier": "asteroid",
-      "personality": "sensor",
-      "title": "Kitchen speaker\\nCast media \u00b7 Robot Intercom TTS\\nCast speaker endpoint\\nCapability score: 3.1 / 82.7\\nRAM 0.128 GB \u00b7 Storage 0.05 GB \u00b7 Compute 8%\\nReachable: unknown \u00b7 Mode: unknown\\nKitchen Speaker: off",
-      "color": "#f9e2af",
-      "border": "#6c7086",
-      "val": 4.2,
-      "capability": 3.1,
-      "capability_pct": 4,
-      "ram_gb": 0.128,
-      "storage_gb": 0.05,
-      "compute": 0.08,
-      "labelSize": 4.7,
-      "glow": 0.14,
-      "pulse": "off",
-      "metrics": {
-        "ram_gb": 0.128,
-        "storage_gb": 0.05,
-        "compute_hw": 0.08,
-        "ram_used_pct": null,
-        "storage_used_pct": null,
-        "cpu_load_pct": null,
-        "source": "static"
-      },
-      "ips": [],
-      "discovered": false,
-      "runs_on": null,
-      "nest_label": null
-    },
-    {
       "id": "smart-plugs",
       "label": "Tuya Smart Plugs",
       "shortName": "Tuya Plugs",
@@ -724,7 +1040,23 @@
       "mode": "unknown",
       "tier": "asteroid",
       "personality": "sensor",
-      "title": "Tuya Smart Plugs\\nPower control (cloud + local)\\nMCU \u00b7 3\u00d7 Wi-Fi switches\\nCapability score: 1.8 / 82.7\\nRAM 0.016 GB \u00b7 Storage 0.008 GB \u00b7 Compute 3%\\nReachable: unknown \u00b7 Mode: unknown\\nPlug 1 \u00b7 Desk: unavailable; Plug 2 \u00b7 Shed: off; Plug 3 \u00b7 Command Central: on",
+      "layer": "physical",
+      "cluster": [
+        "ha-network",
+        "iot"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": true,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": null,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Tuya Smart Plugs\\nPower control (cloud + local)\\nMCU \u00b7 3\u00d7 Wi-Fi switches\\nCapability score: 1.8 / 82.7\\nRAM 0.016 GB \u00b7 Storage 0.008 GB \u00b7 Compute 3%\\nReachable: unknown \u00b7 Mode: unknown\\nPlug 1 \u00b7 Desk: off; Plug 2 \u00b7 Shed: off; Plug 3 \u00b7 Command Central: off",
       "color": "#f9e2af",
       "border": "#6c7086",
       "val": 3.8,
@@ -751,52 +1083,85 @@
       "nest_label": null
     },
     {
-      "id": "zbook-webcam",
-      "label": "ZBook Basement",
-      "shortName": "ZBook Basement",
+      "id": "lg-dryer",
+      "label": "LG Dryer",
+      "shortName": "LG Dryer",
       "group": "iot",
-      "status": "online",
-      "mode": "active",
+      "status": "offline",
+      "mode": "offline",
       "tier": "asteroid",
       "personality": "sensor",
-      "title": "ZBook Basement\\nBasement camera feed \u00b7 go2rtc in WSL\\nRuns on: ZBook \u2192 WSL\\nRTSP stream via go2rtc\\nCapability score: 4.4 / 82.7\\nRAM 0.064 GB \u00b7 Storage 0.25 GB \u00b7 Compute 14%\\nReachable: online \u00b7 Mode: active\\nBasement Webcam: idle\\n172.27.128.1",
+      "layer": "physical",
+      "cluster": [
+        "hardware",
+        "iot",
+        "stale"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "LG Dryer\\nHelix \u00b7 QCA4002-69\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.112",
       "color": "#f9e2af",
-      "border": "#a6e3a1",
-      "val": 4.6,
-      "capability": 4.4,
-      "capability_pct": 5,
-      "ram_gb": 0.064,
-      "storage_gb": 0.25,
-      "compute": 0.14,
-      "labelSize": 4.8,
-      "glow": 0.17,
-      "pulse": "strong",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "off",
       "metrics": {
-        "ram_gb": 0.064,
-        "storage_gb": 0.25,
-        "compute_hw": 0.14,
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
         "ram_used_pct": null,
         "storage_used_pct": null,
         "cpu_load_pct": null,
         "source": "static"
       },
       "ips": [
-        "172.27.128.1"
+        "10.0.0.112"
       ],
-      "discovered": false,
-      "runs_on": "wsl-ubuntu",
-      "nest_label": "ZBook \u2192 WSL"
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
     },
     {
-      "id": "esp-da27ea",
-      "label": "ESP IoT \u00b7 plug",
-      "shortName": "ESP 105",
+      "id": "macbook-air",
+      "label": "Primary MacBook Air",
+      "shortName": "MacBook Air",
       "group": "client",
       "status": "online",
       "mode": "active",
       "tier": "asteroid",
-      "personality": "sensor",
-      "title": "ESP IoT \u00b7 plug\\nKnown LAN client\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 69.9 ms\\n10.0.0.105",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "hardware",
+        "personal"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Primary MacBook Air\\nHelix \u00b7 MacBookAir\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 29.6 ms\\n10.0.0.208",
       "color": "#94e2d5",
       "border": "#a6e3a1",
       "val": 5.9,
@@ -806,7 +1171,7 @@
       "storage_gb": 1,
       "compute": 0.2,
       "labelSize": 5.1,
-      "glow": 0.18,
+      "glow": 0.2,
       "pulse": "strong",
       "metrics": {
         "ram_gb": 0.5,
@@ -818,7 +1183,274 @@
         "source": "static"
       },
       "ips": [
-        "10.0.0.105"
+        "10.0.0.208"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "marshall-iphone",
+      "label": "Mashall Spratt\u2019s iPhone",
+      "shortName": "Mashall Spratt\u2019s",
+      "group": "client",
+      "status": "online",
+      "mode": "home",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "ha-network",
+        "ha-mobile",
+        "hardware",
+        "personal"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": true,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": true,
+      "title": "Mashall Spratt\u2019s iPhone\\nHelix \u00b7 MarshallsiPhone\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: home\\nPing: 42.8 ms\\ndevice_tracker.mashall_spratts_iphone: home\\n10.0.0.182",
+      "color": "#94e2d5",
+      "border": "#6c7086",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.182"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "xbox-one",
+      "label": "Xbox One",
+      "shortName": "Xbox",
+      "group": "client",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "hardware",
+        "iot",
+        "personal"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Xbox One\\nHelix \u00b7 XboxOne\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.145",
+      "color": "#94e2d5",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.145"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "lg-washer",
+      "label": "LG Washer",
+      "shortName": "LG Washer",
+      "group": "iot",
+      "status": "online",
+      "mode": "standby",
+      "tier": "asteroid",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "hardware",
+        "iot"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "LG Washer\\nHelix \u00b7 QCA4002\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: standby\\nPing: 47.1 ms\\n10.0.0.45",
+      "color": "#f9e2af",
+      "border": "#f9e2af",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "soft",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.45"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "smart-fridge",
+      "label": "Smart Refrigerator",
+      "shortName": "Fridge",
+      "group": "iot",
+      "status": "online",
+      "mode": "standby",
+      "tier": "asteroid",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "hardware",
+        "iot"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Smart Refrigerator\\nHelix \u00b7 refrigerator\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: standby\\nPing: 98.9 ms\\n10.0.0.176",
+      "color": "#f9e2af",
+      "border": "#f9e2af",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "soft",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.176"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "wlan0-device",
+      "label": "WLAN Device",
+      "shortName": "wlan0",
+      "group": "iot",
+      "status": "online",
+      "mode": "standby",
+      "tier": "asteroid",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "iot"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "WLAN Device\\nHelix \u00b7 wlan0\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: standby\\nPing: 109.0 ms\\n10.0.0.17",
+      "color": "#f9e2af",
+      "border": "#f9e2af",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "soft",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.17"
       ],
       "discovered": true,
       "runs_on": null,
@@ -833,7 +1465,80 @@
       "mode": "offline",
       "tier": "asteroid",
       "personality": "edge",
-      "title": "Stephanie Cl\u00e9roux\u2019s iPhone\\nHelix: iPhone \u00b7 active on 5 GHz\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\ndevice_tracker.stephanie_clerouxs_iphone: home\\n10.0.0.142",
+      "layer": "physical",
+      "cluster": [
+        "ha-network",
+        "ha-mobile",
+        "hardware",
+        "personal"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": true,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": true,
+      "title": "Stephanie Cl\u00e9roux\u2019s iPhone\\nHelix \u00b7 iPhone\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\ndevice_tracker.stephanie_clerouxs_iphone: home\\n10.0.0.200",
+      "color": "#94e2d5",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.200"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "family-ipad",
+      "label": "iPad",
+      "shortName": "iPad",
+      "group": "client",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "ha-network",
+        "ha-mobile",
+        "hardware",
+        "personal"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": true,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": true,
+      "title": "iPad\\nHelix \u00b7 iPad\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\ndevice_tracker.ipad: home\\n10.0.0.142",
       "color": "#94e2d5",
       "border": "#f38ba8",
       "val": 5.9,
@@ -862,17 +1567,32 @@
       "nest_label": null
     },
     {
-      "id": "esp-18fe85",
-      "label": "ESP IoT \u00b7 LED strip",
-      "shortName": "ESP 150",
-      "group": "client",
-      "status": "online",
-      "mode": "active",
+      "id": "ct-bulb",
+      "label": "Tuya Smart Bulb",
+      "shortName": "CT Bulb",
+      "group": "iot",
+      "status": "offline",
+      "mode": "offline",
       "tier": "asteroid",
       "personality": "sensor",
-      "title": "ESP IoT \u00b7 LED strip\\nKnown LAN client\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 10.3 ms\\n10.0.0.150",
-      "color": "#94e2d5",
-      "border": "#a6e3a1",
+      "layer": "physical",
+      "cluster": [
+        "iot"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Tuya Smart Bulb\\nHelix \u00b7 CT-bulb-9573b8\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.106",
+      "color": "#f9e2af",
+      "border": "#f38ba8",
       "val": 5.9,
       "capability": 8.8,
       "capability_pct": 11,
@@ -881,80 +1601,6 @@
       "compute": 0.2,
       "labelSize": 5.1,
       "glow": 0.18,
-      "pulse": "strong",
-      "metrics": {
-        "ram_gb": 0.5,
-        "storage_gb": 1,
-        "compute_hw": 0.2,
-        "ram_used_pct": null,
-        "storage_used_pct": null,
-        "cpu_load_pct": null,
-        "source": "static"
-      },
-      "ips": [
-        "10.0.0.150"
-      ],
-      "discovered": true,
-      "runs_on": null,
-      "nest_label": null
-    },
-    {
-      "id": "fire-tablet",
-      "label": "Fire Tablet",
-      "shortName": "Fire tab",
-      "group": "client",
-      "status": "online",
-      "mode": "active",
-      "tier": "asteroid",
-      "personality": "edge",
-      "title": "Fire Tablet\\nHelix: android-2b5944\u2026 \u00b7 Amazon Fire\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 117.9 ms\\n10.0.0.182",
-      "color": "#94e2d5",
-      "border": "#a6e3a1",
-      "val": 5.9,
-      "capability": 8.8,
-      "capability_pct": 11,
-      "ram_gb": 0.5,
-      "storage_gb": 1,
-      "compute": 0.2,
-      "labelSize": 5.1,
-      "glow": 0.2,
-      "pulse": "strong",
-      "metrics": {
-        "ram_gb": 0.5,
-        "storage_gb": 1,
-        "compute_hw": 0.2,
-        "ram_used_pct": null,
-        "storage_used_pct": null,
-        "cpu_load_pct": null,
-        "source": "static"
-      },
-      "ips": [
-        "10.0.0.182"
-      ],
-      "discovered": true,
-      "runs_on": null,
-      "nest_label": null
-    },
-    {
-      "id": "family-ipad",
-      "label": "iPad",
-      "shortName": "iPad",
-      "group": "client",
-      "status": "online",
-      "mode": "unknown",
-      "tier": "asteroid",
-      "personality": "edge",
-      "title": "iPad\\nHelix: iPad \u00b7 active on 5 GHz\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: unknown\\nPing: 680.0 ms\\ndevice_tracker.ipad: unknown\\n10.0.0.208",
-      "color": "#94e2d5",
-      "border": "#6c7086",
-      "val": 5.9,
-      "capability": 8.8,
-      "capability_pct": 11,
-      "ram_gb": 0.5,
-      "storage_gb": 1,
-      "compute": 0.2,
-      "labelSize": 5.1,
-      "glow": 0.2,
       "pulse": "off",
       "metrics": {
         "ram_gb": 0.5,
@@ -966,61 +1612,39 @@
         "source": "static"
       },
       "ips": [
-        "10.0.0.208"
+        "10.0.0.106"
       ],
       "discovered": true,
       "runs_on": null,
       "nest_label": null
     },
     {
-      "id": "lan-device-45",
-      "label": "LAN device \u00b7 45",
-      "shortName": "45",
-      "group": "client",
-      "status": "online",
-      "mode": "active",
+      "id": "ct-ledstrip",
+      "label": "Tuya LED Strip",
+      "shortName": "CT Strip",
+      "group": "iot",
+      "status": "offline",
+      "mode": "offline",
       "tier": "asteroid",
       "personality": "sensor",
-      "title": "LAN device \u00b7 45\\nUnidentified \u00b7 check Helix for CT-bulb or QCA4002\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 16.2 ms\\n10.0.0.45",
-      "color": "#94e2d5",
-      "border": "#a6e3a1",
-      "val": 5.9,
-      "capability": 8.8,
-      "capability_pct": 11,
-      "ram_gb": 0.5,
-      "storage_gb": 1,
-      "compute": 0.2,
-      "labelSize": 5.1,
-      "glow": 0.18,
-      "pulse": "strong",
-      "metrics": {
-        "ram_gb": 0.5,
-        "storage_gb": 1,
-        "compute_hw": 0.2,
-        "ram_used_pct": null,
-        "storage_used_pct": null,
-        "cpu_load_pct": null,
-        "source": "static"
+      "layer": "physical",
+      "cluster": [
+        "iot"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
       },
-      "ips": [
-        "10.0.0.45"
-      ],
-      "discovered": true,
-      "runs_on": null,
-      "nest_label": null
-    },
-    {
-      "id": "smart-fridge",
-      "label": "Smart Refrigerator",
-      "shortName": "Fridge",
-      "group": "client",
-      "status": "online",
-      "mode": "active",
-      "tier": "asteroid",
-      "personality": "sensor",
-      "title": "Smart Refrigerator\\nHelix: refrigerator\\nSeen on LAN (ARP)\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 46.3 ms\\n10.0.0.87",
-      "color": "#94e2d5",
-      "border": "#a6e3a1",
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "Tuya LED Strip\\nHelix \u00b7 CT-LEDstrip-58cae0\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.87",
+      "color": "#f9e2af",
+      "border": "#f38ba8",
       "val": 5.9,
       "capability": 8.8,
       "capability_pct": 11,
@@ -1029,7 +1653,7 @@
       "compute": 0.2,
       "labelSize": 5.1,
       "glow": 0.18,
-      "pulse": "strong",
+      "pulse": "off",
       "metrics": {
         "ram_gb": 0.5,
         "storage_gb": 1,
@@ -1047,71 +1671,743 @@
       "nest_label": null
     },
     {
-      "id": "marshall-iphone",
-      "label": "Mashall Spratt\u2019s iPhone",
-      "shortName": "Mashall Spratt\u2019s",
-      "group": "client",
-      "status": "unknown",
-      "mode": "unknown",
+      "id": "esp-18fe85",
+      "label": "ESP IoT \u00b7 LED strip",
+      "shortName": "ESP 150",
+      "group": "iot",
+      "status": "online",
+      "mode": "standby",
       "tier": "asteroid",
-      "personality": "edge",
-      "title": "Mashall Spratt\u2019s iPhone\\nMobile / tablet \u00b7 Home Assistant tracker\\nHA tracker \u00b7 home\\nCapability score: 4.2 / 82.7\\nRAM 0.064 GB \u00b7 Storage 0.256 GB \u00b7 Compute 12%\\nReachable: unknown \u00b7 Mode: unknown\\ndevice_tracker.mashall_spratts_iphone: home",
-      "color": "#94e2d5",
-      "border": "#6c7086",
-      "val": 4.6,
-      "capability": 4.2,
-      "capability_pct": 5,
-      "ram_gb": 0.064,
-      "storage_gb": 0.256,
-      "compute": 0.12,
-      "labelSize": 4.8,
-      "glow": 0.16,
-      "pulse": "off",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "iot"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "ESP IoT \u00b7 LED strip\\nHelix \u00b7 ESP_18FE85\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: standby\\nPing: 32.7 ms\\n10.0.0.150",
+      "color": "#f9e2af",
+      "border": "#f9e2af",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "soft",
       "metrics": {
-        "ram_gb": 0.064,
-        "storage_gb": 0.256,
-        "compute_hw": 0.12,
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
         "ram_used_pct": null,
         "storage_used_pct": null,
         "cpu_load_pct": null,
         "source": "static"
       },
-      "ips": [],
+      "ips": [
+        "10.0.0.150"
+      ],
       "discovered": true,
       "runs_on": null,
       "nest_label": null
     },
     {
-      "id": "homebase-macbook",
-      "label": "HomeBase_Macbook",
-      "shortName": "HomeBase_Macbook",
-      "group": "client",
-      "status": "unknown",
-      "mode": "unknown",
+      "id": "esp-da27ea",
+      "label": "ESP IoT \u00b7 plug",
+      "shortName": "ESP 105",
+      "group": "iot",
+      "status": "online",
+      "mode": "standby",
       "tier": "asteroid",
-      "personality": "edge",
-      "title": "HomeBase_Macbook\\nMobile / tablet \u00b7 Home Assistant tracker\\nHA tracker \u00b7 home\\nCapability score: 4.2 / 82.7\\nRAM 0.064 GB \u00b7 Storage 0.256 GB \u00b7 Compute 12%\\nReachable: unknown \u00b7 Mode: unknown\\ndevice_tracker.homebase_macbook: home",
-      "color": "#94e2d5",
-      "border": "#6c7086",
-      "val": 4.6,
-      "capability": 4.2,
-      "capability_pct": 5,
-      "ram_gb": 0.064,
-      "storage_gb": 0.256,
-      "compute": 0.12,
-      "labelSize": 4.8,
-      "glow": 0.16,
-      "pulse": "off",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "iot"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": true,
+      "stale_registry": false,
+      "ha_tracked": false,
+      "title": "ESP IoT \u00b7 plug\\nHelix \u00b7 ESP_DA27EA\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: standby\\nPing: 54.9 ms\\n10.0.0.105",
+      "color": "#f9e2af",
+      "border": "#f9e2af",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "soft",
       "metrics": {
-        "ram_gb": 0.064,
-        "storage_gb": 0.256,
-        "compute_hw": 0.12,
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
         "ram_used_pct": null,
         "storage_used_pct": null,
         "cpu_load_pct": null,
         "source": "static"
       },
-      "ips": [],
+      "ips": [
+        "10.0.0.105"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "family-ipad-stale",
+      "label": "Family iPad",
+      "shortName": "iPad",
+      "group": "client",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "personal",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "Family iPad\\nHelix \u00b7 iPad\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.57",
+      "color": "#94e2d5",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.57"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "iphone-61",
+      "label": "iPhone-61",
+      "shortName": "iPhone-61",
+      "group": "client",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "personal",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "iPhone-61\\nHelix \u00b7 iPhone-61\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.104",
+      "color": "#94e2d5",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.104"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "unknown-7070aa",
+      "label": "70:70:aa:1c:90:48",
+      "shortName": "70:70:aa:1c:90:4",
+      "group": "client",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "personal",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "70:70:aa:1c:90:48\\nHelix \u00b7 70:70:aa:1c:90:48\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.68",
+      "color": "#94e2d5",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.68"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "esp-efaad0",
+      "label": "d0:c9:07:ef:aa:d0",
+      "shortName": "d0:c9:07:ef:aa:d",
+      "group": "iot",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "iot",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "d0:c9:07:ef:aa:d0\\nHelix \u00b7 d0:c9:07:ef:aa:d0\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.89",
+      "color": "#f9e2af",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.89"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "esp-d65278",
+      "label": "d0:c9:07:d6:52:78",
+      "shortName": "d0:c9:07:d6:52:7",
+      "group": "iot",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "iot",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "d0:c9:07:d6:52:78\\nHelix \u00b7 d0:c9:07:d6:52:78\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.168",
+      "color": "#f9e2af",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.168"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "espressif-generic",
+      "label": "espressif",
+      "shortName": "espressif",
+      "group": "client",
+      "status": "online",
+      "mode": "active",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "personal",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "espressif\\nHelix \u00b7 espressif\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: active\\nPing: 67.1 ms\\n10.0.0.78",
+      "color": "#94e2d5",
+      "border": "#a6e3a1",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "strong",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.78"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "esp-e2f9c4",
+      "label": "d0:c9:07:e2:f9:c4",
+      "shortName": "d0:c9:07:e2:f9:c",
+      "group": "iot",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "iot",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "d0:c9:07:e2:f9:c4\\nHelix \u00b7 d0:c9:07:e2:f9:c4\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.81",
+      "color": "#f9e2af",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.81"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "esp-da324b",
+      "label": "ESP DA324B",
+      "shortName": "ESP DA324B",
+      "group": "iot",
+      "status": "online",
+      "mode": "standby",
+      "tier": "asteroid",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "iot",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "ESP DA324B\\nHelix \u00b7 ESP_DA324B\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: online \u00b7 Mode: standby\\nPing: 78.8 ms\\n10.0.0.58",
+      "color": "#f9e2af",
+      "border": "#f9e2af",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "soft",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.58"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "esp-2c6b52",
+      "label": "ESP 2C6B52",
+      "shortName": "ESP 2C6B52",
+      "group": "iot",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "sensor",
+      "layer": "physical",
+      "cluster": [
+        "iot",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": true,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "ESP 2C6B52\\nHelix \u00b7 ESP_2C6B52\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.79, 10.0.0.78",
+      "color": "#f9e2af",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.18,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.79",
+        "10.0.0.78"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "galaxy-tab",
+      "label": "Family Frame Tablet",
+      "shortName": "Galaxy Tab",
+      "group": "client",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "hardware",
+        "personal",
+        "stale"
+      ],
+      "views": {
+        "hardware": true,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "Family Frame Tablet\\nHelix \u00b7 Galaxy-Tab-A-8-0-2019\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.30",
+      "color": "#94e2d5",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.30"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "iphone-60",
+      "label": "iPhone-60",
+      "shortName": "iPhone-60",
+      "group": "client",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "personal",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "iPhone-60\\nHelix \u00b7 iPhone-60\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.93",
+      "color": "#94e2d5",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.93"
+      ],
+      "discovered": true,
+      "runs_on": null,
+      "nest_label": null
+    },
+    {
+      "id": "iphone-54",
+      "label": "iPhone-54",
+      "shortName": "iPhone-54",
+      "group": "client",
+      "status": "offline",
+      "mode": "offline",
+      "tier": "asteroid",
+      "personality": "edge",
+      "layer": "physical",
+      "cluster": [
+        "personal",
+        "stale"
+      ],
+      "views": {
+        "hardware": false,
+        "iot_belt": false,
+        "ha_network": false,
+        "homelab_core": false,
+        "is_virtual": false,
+        "is_network": false
+      },
+      "router_online": false,
+      "stale_registry": true,
+      "ha_tracked": false,
+      "title": "iPhone-54\\nHelix \u00b7 iPhone-54\\nHelix router registry\\nCapability score: 8.8 / 82.7\\nRAM 0.5 GB \u00b7 Storage 1 GB \u00b7 Compute 20%\\nReachable: offline \u00b7 Mode: offline\\n10.0.0.59",
+      "color": "#94e2d5",
+      "border": "#f38ba8",
+      "val": 5.9,
+      "capability": 8.8,
+      "capability_pct": 11,
+      "ram_gb": 0.5,
+      "storage_gb": 1,
+      "compute": 0.2,
+      "labelSize": 5.1,
+      "glow": 0.2,
+      "pulse": "off",
+      "metrics": {
+        "ram_gb": 0.5,
+        "storage_gb": 1,
+        "compute_hw": 0.2,
+        "ram_used_pct": null,
+        "storage_used_pct": null,
+        "cpu_load_pct": null,
+        "source": "static"
+      },
+      "ips": [
+        "10.0.0.59"
+      ],
       "discovered": true,
       "runs_on": null,
       "nest_label": null
@@ -1125,7 +2421,7 @@
       "from": "router-gateway",
       "to": "zbook-wifi",
       "medium": "wifi_5g",
-      "label": "Wi-Fi 5 GHz \u00b7 5.0ms \u00b7 up",
+      "label": "Wi-Fi 5 GHz \u00b7 10.0ms \u00b7 up",
       "title": "ZBook wireless uplink",
       "color": "#ffb74d",
       "width": 2,
@@ -1138,7 +2434,7 @@
       "from": "router-gateway",
       "to": "mac-primary",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 2.6ms \u00b7 up",
+      "label": "Wi-Fi \u00b7 2.4ms \u00b7 up",
       "title": "Daily driver Mac",
       "color": "#ffcc80",
       "width": 2,
@@ -1151,7 +2447,7 @@
       "from": "router-gateway",
       "to": "old-macbook",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 90.6ms \u00b7 up",
+      "label": "Wi-Fi \u00b7 82.8ms \u00b7 up",
       "title": "Family Mac",
       "color": "#ffcc80",
       "width": 2,
@@ -1164,7 +2460,7 @@
       "from": "router-gateway",
       "to": "w09n-frame",
       "medium": "wifi_2g",
-      "label": "Wi-Fi 2.4 GHz \u00b7 35.9ms \u00b7 up",
+      "label": "Wi-Fi 2.4 GHz \u00b7 45.8ms \u00b7 up",
       "title": "Frame on 2.4 GHz SSID",
       "color": "#f9a825",
       "width": 2,
@@ -1173,12 +2469,12 @@
     {
       "id": "e4",
       "source": "router-gateway",
-      "target": "chromecast",
+      "target": "kitchen-speaker",
       "from": "router-gateway",
-      "to": "chromecast",
+      "to": "kitchen-speaker",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 18.6ms \u00b7 up",
-      "title": "Cast discovery",
+      "label": "Wi-Fi \u00b7 5.6ms \u00b7 up",
+      "title": "Google Home Mini",
       "color": "#ffcc80",
       "width": 2,
       "directed": false
@@ -1190,7 +2486,7 @@
       "from": "router-gateway",
       "to": "smart-plugs",
       "medium": "wifi_2g",
-      "label": "Wi-Fi 2.4 GHz \u00b7 5.0ms \u00b7 degraded",
+      "label": "Wi-Fi 2.4 GHz \u00b7 4.6ms \u00b7 degraded",
       "title": "Tuya Wi-Fi plugs",
       "color": "#fab387",
       "width": 1,
@@ -1281,7 +2577,7 @@
       "from": "mac-primary",
       "to": "zbook-wifi",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 2.6ms \u00b7 up",
+      "label": "Wi-Fi \u00b7 7.9ms \u00b7 up",
       "title": "SSH \u00b7 SMB \u00b7 HA UI",
       "color": "#ffcc80",
       "width": 2,
@@ -1294,7 +2590,7 @@
       "from": "mac-primary",
       "to": "homeassistant",
       "medium": "http",
-      "label": "HTTP / Web UI \u00b7 12.5ms \u00b7 up",
+      "label": "HTTP / Web UI \u00b7 22.5ms \u00b7 up",
       "title": "Dashboard \u00b7 Obsidian refresh",
       "color": "#ba68c8",
       "width": 2,
@@ -1307,7 +2603,7 @@
       "from": "mac-primary",
       "to": "zbook-wifi",
       "medium": "tailscale",
-      "label": "Tailscale overlay \u00b7 2.6ms \u00b7 up",
+      "label": "Tailscale overlay \u00b7 7.9ms \u00b7 up",
       "title": "Remote access overlay",
       "color": "#81c784",
       "width": 2,
@@ -1320,7 +2616,7 @@
       "from": "old-macbook",
       "to": "zbook-wifi",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 90.6ms \u00b7 up",
+      "label": "Wi-Fi \u00b7 88.2ms \u00b7 up",
       "title": "LAN file share",
       "color": "#ffcc80",
       "width": 2,
@@ -1333,7 +2629,7 @@
       "from": "w09n-frame",
       "to": "homeassistant",
       "medium": "http",
-      "label": "HTTP / Web UI \u00b7 45.7ms \u00b7 up",
+      "label": "HTTP / Web UI \u00b7 65.8ms \u00b7 up",
       "title": "Loads /frame-panel tiles",
       "color": "#ba68c8",
       "width": 2,
@@ -1346,7 +2642,7 @@
       "from": "w09n-frame",
       "to": "zbook-wifi",
       "medium": "wifi_2g",
-      "label": "Wi-Fi 2.4 GHz \u00b7 35.9ms \u00b7 up",
+      "label": "Wi-Fi 2.4 GHz \u00b7 51.2ms \u00b7 up",
       "title": "HTTP to HA portproxy",
       "color": "#f9a825",
       "width": 2,
@@ -1359,10 +2655,10 @@
       "from": "homeassistant",
       "to": "kitchen-speaker",
       "medium": "cast",
-      "label": "Google Cast protocol \u00b7 24.6ms \u00b7 degraded",
+      "label": "Google Cast protocol \u00b7 25.7ms \u00b7 up",
       "title": "TTS \u00b7 media control",
-      "color": "#fab387",
-      "width": 1,
+      "color": "#fff176",
+      "width": 2,
       "directed": true
     },
     {
@@ -1372,7 +2668,7 @@
       "from": "homeassistant",
       "to": "smart-plugs",
       "medium": "cloud_api",
-      "label": "Cloud API (Tuya) \u00b7 24.6ms \u00b7 degraded",
+      "label": "Cloud API (Tuya) \u00b7 44.7ms \u00b7 degraded",
       "title": "Tuya integration",
       "color": "#fab387",
       "width": 1,
@@ -1380,78 +2676,78 @@
     },
     {
       "id": "e20",
-      "source": "homeassistant",
-      "target": "chromecast",
-      "from": "homeassistant",
-      "to": "chromecast",
-      "medium": "cast",
-      "label": "Google Cast protocol \u00b7 28.4ms \u00b7 up",
-      "title": "Cast discovery",
-      "color": "#fff176",
-      "width": 2,
-      "directed": true
-    },
-    {
-      "id": "e21",
-      "source": "chromecast",
-      "target": "kitchen-speaker",
-      "from": "chromecast",
-      "to": "kitchen-speaker",
-      "medium": "cast",
-      "label": "Google Cast protocol \u00b7 32.1ms \u00b7 degraded",
-      "title": "Speaker group / Cast route",
-      "color": "#fab387",
-      "width": 1,
-      "directed": true
-    },
-    {
-      "id": "e22",
-      "source": "zbook-webcam",
+      "source": "zbook-wifi",
       "target": "homeassistant",
-      "from": "zbook-webcam",
+      "from": "zbook-wifi",
       "to": "homeassistant",
       "medium": "rtsp",
-      "label": "RTSP video stream \u00b7 24.6ms \u00b7 up",
-      "title": "Camera stream to HA",
+      "label": "RTSP video stream \u00b7 30.1ms \u00b7 up",
+      "title": "Basement webcam via go2rtc",
       "color": "#ef5350",
       "width": 2,
       "directed": false
     },
     {
+      "id": "e21",
+      "source": "router-gateway",
+      "target": "lg-dryer",
+      "from": "router-gateway",
+      "to": "lg-dryer",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
+      "directed": false
+    },
+    {
+      "id": "e22",
+      "source": "router-gateway",
+      "target": "macbook-air",
+      "from": "router-gateway",
+      "to": "macbook-air",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 17.1ms \u00b7 up",
+      "title": "Helix router registry",
+      "color": "#ffcc80",
+      "width": 2,
+      "directed": false
+    },
+    {
       "id": "e23",
-      "source": "zbook-webcam",
-      "target": "wsl-ubuntu",
-      "from": "zbook-webcam",
-      "to": "wsl-ubuntu",
-      "medium": "docker_bridge",
-      "label": "Docker bridge (WSL2) \u00b7 up",
-      "title": "go2rtc in WSL",
-      "color": "#ce93d8",
+      "source": "router-gateway",
+      "target": "marshall-iphone",
+      "from": "router-gateway",
+      "to": "marshall-iphone",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 23.7ms \u00b7 up",
+      "title": "Helix router registry",
+      "color": "#ffcc80",
       "width": 2,
       "directed": false
     },
     {
       "id": "e24",
-      "source": "zbook-webcam",
-      "target": "zbook-wifi",
-      "from": "zbook-webcam",
-      "to": "zbook-wifi",
-      "medium": "logical",
-      "label": "Logical / documented link \u00b7 up",
-      "title": "Host camera passthrough",
-      "color": "#78909c",
-      "width": 2,
+      "source": "router-gateway",
+      "target": "xbox-one",
+      "from": "router-gateway",
+      "to": "xbox-one",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
       "directed": false
     },
     {
       "id": "e25",
       "source": "router-gateway",
-      "target": "esp-da27ea",
+      "target": "lg-washer",
       "from": "router-gateway",
-      "to": "esp-da27ea",
+      "to": "lg-washer",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 37.5ms \u00b7 up",
-      "title": "LAN ARP discovery",
+      "label": "Wi-Fi \u00b7 25.9ms \u00b7 up",
+      "title": "Helix router registry",
       "color": "#ffcc80",
       "width": 2,
       "directed": false
@@ -1459,25 +2755,25 @@
     {
       "id": "e26",
       "source": "router-gateway",
-      "target": "wife-iphone",
+      "target": "smart-fridge",
       "from": "router-gateway",
-      "to": "wife-iphone",
+      "to": "smart-fridge",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 5.0ms \u00b7 degraded",
-      "title": "LAN ARP discovery",
-      "color": "#fab387",
-      "width": 1,
+      "label": "Wi-Fi \u00b7 51.8ms \u00b7 up",
+      "title": "Helix router registry",
+      "color": "#ffcc80",
+      "width": 2,
       "directed": false
     },
     {
       "id": "e27",
       "source": "router-gateway",
-      "target": "esp-18fe85",
+      "target": "wlan0-device",
       "from": "router-gateway",
-      "to": "esp-18fe85",
+      "to": "wlan0-device",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 7.7ms \u00b7 up",
-      "title": "LAN ARP discovery",
+      "label": "Wi-Fi \u00b7 56.8ms \u00b7 up",
+      "title": "Helix router registry",
       "color": "#ffcc80",
       "width": 2,
       "directed": false
@@ -1485,14 +2781,14 @@
     {
       "id": "e28",
       "source": "router-gateway",
-      "target": "fire-tablet",
+      "target": "wife-iphone",
       "from": "router-gateway",
-      "to": "fire-tablet",
-      "medium": "wifi",
-      "label": "Wi-Fi \u00b7 61.5ms \u00b7 up",
-      "title": "LAN ARP discovery",
-      "color": "#ffcc80",
-      "width": 2,
+      "to": "wife-iphone",
+      "medium": "wifi_5g",
+      "label": "Wi-Fi 5 GHz \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
       "directed": false
     },
     {
@@ -1501,48 +2797,48 @@
       "target": "family-ipad",
       "from": "router-gateway",
       "to": "family-ipad",
-      "medium": "wifi",
-      "label": "Wi-Fi \u00b7 342.5ms \u00b7 up",
-      "title": "LAN ARP discovery",
-      "color": "#ffcc80",
-      "width": 2,
+      "medium": "wifi_5g",
+      "label": "Wi-Fi 5 GHz \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
       "directed": false
     },
     {
       "id": "e30",
       "source": "router-gateway",
-      "target": "lan-device-45",
+      "target": "ct-bulb",
       "from": "router-gateway",
-      "to": "lan-device-45",
+      "to": "ct-bulb",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 10.6ms \u00b7 up",
-      "title": "LAN ARP discovery",
-      "color": "#ffcc80",
-      "width": 2,
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
       "directed": false
     },
     {
       "id": "e31",
       "source": "router-gateway",
-      "target": "smart-fridge",
+      "target": "ct-ledstrip",
       "from": "router-gateway",
-      "to": "smart-fridge",
+      "to": "ct-ledstrip",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 25.6ms \u00b7 up",
-      "title": "LAN ARP discovery",
-      "color": "#ffcc80",
-      "width": 2,
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
       "directed": false
     },
     {
       "id": "e32",
       "source": "router-gateway",
-      "target": "homeassistant",
+      "target": "esp-18fe85",
       "from": "router-gateway",
-      "to": "homeassistant",
+      "to": "esp-18fe85",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 14.8ms \u00b7 up",
-      "title": "Helix / LAN Wi\u2011Fi",
+      "label": "Wi-Fi \u00b7 18.7ms \u00b7 up",
+      "title": "Helix router registry",
       "color": "#ffcc80",
       "width": 2,
       "directed": false
@@ -1550,12 +2846,12 @@
     {
       "id": "e33",
       "source": "router-gateway",
-      "target": "minecraft-server",
+      "target": "esp-da27ea",
       "from": "router-gateway",
-      "to": "minecraft-server",
+      "to": "esp-da27ea",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 22.5ms \u00b7 up",
-      "title": "Helix / LAN Wi\u2011Fi",
+      "label": "Wi-Fi \u00b7 29.8ms \u00b7 up",
+      "title": "Helix router registry",
       "color": "#ffcc80",
       "width": 2,
       "directed": false
@@ -1563,76 +2859,258 @@
     {
       "id": "e34",
       "source": "router-gateway",
-      "target": "minecraft-phantom",
+      "target": "family-ipad-stale",
       "from": "router-gateway",
-      "to": "minecraft-phantom",
+      "to": "family-ipad-stale",
       "medium": "wifi",
-      "label": "Wi-Fi \u00b7 22.4ms \u00b7 up",
-      "title": "Helix / LAN Wi\u2011Fi",
-      "color": "#ffcc80",
-      "width": 2,
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
       "directed": false
     },
     {
       "id": "e35",
-      "source": "homeassistant",
-      "target": "w09n-frame",
-      "from": "homeassistant",
-      "to": "w09n-frame",
-      "medium": "ha_mobile",
-      "label": "Home Assistant app \u00b7 45.7ms \u00b7 up",
-      "title": "HA Companion \u00b7 home",
-      "color": "#26a69a",
-      "width": 2,
+      "source": "router-gateway",
+      "target": "iphone-61",
+      "from": "router-gateway",
+      "to": "iphone-61",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
       "directed": false
     },
     {
       "id": "e36",
-      "source": "homeassistant",
-      "target": "wife-iphone",
-      "from": "homeassistant",
-      "to": "wife-iphone",
-      "medium": "ha_mobile",
-      "label": "Home Assistant app \u00b7 24.6ms \u00b7 degraded",
-      "title": "HA Companion \u00b7 home",
+      "source": "router-gateway",
+      "target": "unknown-7070aa",
+      "from": "router-gateway",
+      "to": "unknown-7070aa",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
       "color": "#fab387",
       "width": 1,
       "directed": false
     },
     {
       "id": "e37",
-      "source": "homeassistant",
-      "target": "family-ipad",
-      "from": "homeassistant",
-      "to": "family-ipad",
-      "medium": "ha_mobile",
-      "label": "Home Assistant app \u00b7 352.3ms \u00b7 up",
-      "title": "HA Companion \u00b7 unknown",
-      "color": "#26a69a",
-      "width": 2,
+      "source": "router-gateway",
+      "target": "esp-efaad0",
+      "from": "router-gateway",
+      "to": "esp-efaad0",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
       "directed": false
     },
     {
       "id": "e38",
-      "source": "homeassistant",
-      "target": "marshall-iphone",
-      "from": "homeassistant",
-      "to": "marshall-iphone",
-      "medium": "ha_mobile",
-      "label": "Home Assistant app \u00b7 24.6ms \u00b7 degraded",
-      "title": "HA Companion \u00b7 home",
+      "source": "router-gateway",
+      "target": "esp-d65278",
+      "from": "router-gateway",
+      "to": "esp-d65278",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
       "color": "#fab387",
       "width": 1,
       "directed": false
     },
     {
       "id": "e39",
+      "source": "router-gateway",
+      "target": "espressif-generic",
+      "from": "router-gateway",
+      "to": "espressif-generic",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 35.8ms \u00b7 up",
+      "title": "Helix router registry",
+      "color": "#ffcc80",
+      "width": 2,
+      "directed": false
+    },
+    {
+      "id": "e40",
+      "source": "router-gateway",
+      "target": "esp-e2f9c4",
+      "from": "router-gateway",
+      "to": "esp-e2f9c4",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
+      "directed": false
+    },
+    {
+      "id": "e41",
+      "source": "router-gateway",
+      "target": "esp-da324b",
+      "from": "router-gateway",
+      "to": "esp-da324b",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 41.7ms \u00b7 up",
+      "title": "Helix router registry",
+      "color": "#ffcc80",
+      "width": 2,
+      "directed": false
+    },
+    {
+      "id": "e42",
+      "source": "router-gateway",
+      "target": "esp-2c6b52",
+      "from": "router-gateway",
+      "to": "esp-2c6b52",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
+      "directed": false
+    },
+    {
+      "id": "e43",
+      "source": "router-gateway",
+      "target": "galaxy-tab",
+      "from": "router-gateway",
+      "to": "galaxy-tab",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
+      "directed": false
+    },
+    {
+      "id": "e44",
+      "source": "router-gateway",
+      "target": "iphone-60",
+      "from": "router-gateway",
+      "to": "iphone-60",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
+      "directed": false
+    },
+    {
+      "id": "e45",
+      "source": "router-gateway",
+      "target": "iphone-54",
+      "from": "router-gateway",
+      "to": "iphone-54",
+      "medium": "wifi_5g",
+      "label": "Wi-Fi 5 GHz \u00b7 4.6ms \u00b7 degraded",
+      "title": "Helix router registry",
+      "color": "#fab387",
+      "width": 1,
+      "directed": false
+    },
+    {
+      "id": "e46",
+      "source": "router-gateway",
+      "target": "homeassistant",
+      "from": "router-gateway",
+      "to": "homeassistant",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 24.7ms \u00b7 up",
+      "title": "Helix / LAN Wi\u2011Fi",
+      "color": "#ffcc80",
+      "width": 2,
+      "directed": false
+    },
+    {
+      "id": "e47",
+      "source": "router-gateway",
+      "target": "minecraft-server",
+      "from": "router-gateway",
+      "to": "minecraft-server",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 23.4ms \u00b7 up",
+      "title": "Helix / LAN Wi\u2011Fi",
+      "color": "#ffcc80",
+      "width": 2,
+      "directed": false
+    },
+    {
+      "id": "e48",
+      "source": "router-gateway",
+      "target": "minecraft-phantom",
+      "from": "router-gateway",
+      "to": "minecraft-phantom",
+      "medium": "wifi",
+      "label": "Wi-Fi \u00b7 21.7ms \u00b7 up",
+      "title": "Helix / LAN Wi\u2011Fi",
+      "color": "#ffcc80",
+      "width": 2,
+      "directed": false
+    },
+    {
+      "id": "e49",
       "source": "homeassistant",
-      "target": "homebase-macbook",
+      "target": "old-macbook",
       "from": "homeassistant",
-      "to": "homebase-macbook",
+      "to": "old-macbook",
       "medium": "ha_mobile",
-      "label": "Home Assistant app \u00b7 24.6ms \u00b7 degraded",
+      "label": "Home Assistant app \u00b7 102.8ms \u00b7 up",
+      "title": "HA Companion \u00b7 home",
+      "color": "#26a69a",
+      "width": 2,
+      "directed": false
+    },
+    {
+      "id": "e50",
+      "source": "homeassistant",
+      "target": "w09n-frame",
+      "from": "homeassistant",
+      "to": "w09n-frame",
+      "medium": "ha_mobile",
+      "label": "Home Assistant app \u00b7 65.8ms \u00b7 up",
+      "title": "HA Companion \u00b7 home",
+      "color": "#26a69a",
+      "width": 2,
+      "directed": false
+    },
+    {
+      "id": "e51",
+      "source": "homeassistant",
+      "target": "marshall-iphone",
+      "from": "homeassistant",
+      "to": "marshall-iphone",
+      "medium": "ha_mobile",
+      "label": "Home Assistant app \u00b7 43.8ms \u00b7 up",
+      "title": "HA Companion \u00b7 home",
+      "color": "#26a69a",
+      "width": 2,
+      "directed": false
+    },
+    {
+      "id": "e52",
+      "source": "homeassistant",
+      "target": "wife-iphone",
+      "from": "homeassistant",
+      "to": "wife-iphone",
+      "medium": "ha_mobile",
+      "label": "Home Assistant app \u00b7 44.7ms \u00b7 degraded",
+      "title": "HA Companion \u00b7 home",
+      "color": "#fab387",
+      "width": 1,
+      "directed": false
+    },
+    {
+      "id": "e53",
+      "source": "homeassistant",
+      "target": "family-ipad",
+      "from": "homeassistant",
+      "to": "family-ipad",
+      "medium": "ha_mobile",
+      "label": "Home Assistant app \u00b7 44.7ms \u00b7 degraded",
       "title": "HA Companion \u00b7 home",
       "color": "#fab387",
       "width": 1,

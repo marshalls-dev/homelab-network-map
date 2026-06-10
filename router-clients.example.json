@@ -1,0 +1,22 @@
+{
+  "_comment": "Helix router export — MAC is the primary key. Copy to router-clients.json and re-export when devices change.",
+  "exported": "2026-06-07",
+  "devices": [
+    {
+      "hostname": "MarshallsiPhone",
+      "mac": "18:E7:B0:1C:6F:14",
+      "ip": "10.0.0.182",
+      "online": true,
+      "band": "2.4",
+      "canonical_id": "marshall-iphone"
+    },
+    {
+      "hostname": "DESKTOP-D1H9I0P",
+      "mac": "60:F6:77:8A:4F:D5",
+      "ip": "10.0.0.169",
+      "online": true,
+      "band": "5",
+      "canonical_id": "zbook"
+    }
+  ]
+}
