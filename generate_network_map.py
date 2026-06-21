@@ -24,6 +24,15 @@ from typing import Any, Awaitable, Callable
 
 VAULT = Path(__file__).resolve().parent
 
+HOME_ASSISTANT_HOST = "10.0.0.8"
+ZBOOK_HOST = "10.0.0.169"
+
+# Glances API per map node (Windows svchost owns :61208 on ZBook — use :61209).
+GLANCES_HOSTS: dict[str, tuple[str, int]] = {
+    "zbook-wifi": (ZBOOK_HOST, 61209),
+    "old-macbook": (HOME_ASSISTANT_HOST, 61208),
+}
+
 MEDIUM_META = {
     "wifi_2g": {"label": "Wi-Fi 2.4 GHz", "color": "#f9a825", "dashes": [8, 4]},
     "wifi_5g": {"label": "Wi-Fi 5 GHz", "color": "#ffb74d", "dashes": False},
@@ -112,14 +121,14 @@ DEVICES: dict[str, dict] = {
     "zbook-wifi": {
         "name": "ZBook Server",
         "type": "server",
-        "role": "Home lab host (Windows + WSL2)",
+        "role": "Basement server (Windows · RTSP · media)",
         "ips": ["10.0.0.169"],
         "tailscale": ["100.97.161.68"],
         "hardware": "HP ZBook · DESKTOP-D1H9I0P",
-        "services": ["Home Assistant :8123", "Cockpit :9090", "Glances :61208", "SMB ZBookShare :445", "Basement webcam · go2rtc RTSP"],
+        "services": ["Glances :61209", "Basement RTSP :8554", "SMB ZBookShare :445", "Ollama :11434"],
         "power_profile": "always_on",
-        "probe_ports": [8123, 61208, 445],
-        "ha_entities": ["camera.172_27_128_1"],
+        "probe_ports": [61209, 8554, 445],
+        "ha_entities": ["camera.basement_webcam"],
     },
     "wsl-ubuntu": {
         "name": "WSL Ubuntu",
@@ -137,14 +146,14 @@ DEVICES: dict[str, dict] = {
     "homeassistant": {
         "name": "Home Assistant",
         "type": "service",
-        "role": "Automation hub · Docker container",
-        "runs_on": "wsl-ubuntu",
-        "ips": ["10.0.0.169"],
-        "tailscale": ["https://desktop-d1h9i0p-1.tailf11422.ts.net"],
-        "hardware": "Docker · Trusted Networks auth",
-        "services": ["/live-kiosk", "/frame-panel", "Tuya plugs", "Cast", "Robot Intercom"],
+        "role": "Automation hub · Docker on Home Base Mac",
+        "runs_on": "old-macbook",
+        "ips": ["10.0.0.8"],
+        "tailscale": [],
+        "hardware": "Docker Compose · Trusted Networks auth",
+        "services": ["/live-kiosk", "/frame-panel", "Tuya plugs", "Cast", "Robot Intercom", "go2rtc :1984"],
         "power_profile": "always_on",
-        "probe_http": "http://10.0.0.169:8123/",
+        "probe_http": f"http://{HOME_ASSISTANT_HOST}:8123/",
     },
     "minecraft-server": {
         "name": "Minecraft Paper",
@@ -182,13 +191,14 @@ DEVICES: dict[str, dict] = {
     },
     "old-macbook": {
         "name": "HomeBase MacBook Pro",
-        "type": "client",
-        "role": "Family workstation · Home Assistant Companion",
+        "type": "server",
+        "role": "Primary HA host · Home Base Mac",
         "ips": ["10.0.0.8"],
         "tailscale": [],
         "hardware": "HomeBases-MBP · Tests-MacBook-Pro",
-        "services": ["Migration source", "Home Assistant Companion"],
-        "power_profile": "standby_capable",
+        "services": ["Home Assistant :8123", "go2rtc :1984", "Glances :61208", "Home Assistant Companion"],
+        "power_profile": "always_on",
+        "probe_ports": [8123, 61208, 1984],
         "ha_entity": "device_tracker.homebase_macbook",
     },
     "w09n-frame": {
@@ -200,7 +210,7 @@ DEVICES: dict[str, dict] = {
         "hardware": "NexFoto W09N · Android 4.4.2 · WallPanel",
         "services": ["Firefox", "/frame-panel dashboard"],
         "power_profile": "display_always_on",
-        "probe_http": "http://10.0.0.169:8123/frame-panel",
+        "probe_http": f"http://{HOME_ASSISTANT_HOST}:8123/frame-panel",
     },
     "kitchen-speaker": {
         "name": "Kitchen Speaker",
@@ -1651,9 +1661,11 @@ def probe_devices(
     ha_token: str | None,
     connections: list[dict] | None = None,
     ha_states: dict[str, dict] | None = None,
+    *,
+    ha_host: str = HOME_ASSISTANT_HOST,
 ) -> dict:
     conns = connections if connections is not None else CONNECTIONS
-    ha_base = f"http://{zbook}:8123"
+    ha_base = f"http://{ha_host}:8123"
     if ha_states is None:
         ha_states = ha_fetch_states(ha_base, ha_token or "")
 
@@ -1675,12 +1687,26 @@ def probe_devices(
                 d.update(result)
                 break
 
-    zb = devices["zbook-wifi"]
-    for port in zb.get("probe_ports", []):
-        if isinstance(port, int):
-            zb.setdefault("ports", {})[str(port)] = tcp_probe(zbook, port)
-    if zb.get("ports"):
-        zb["ports_open"] = any(zb["ports"].values())
+    for did, d in devices.items():
+        ports_cfg = d.get("probe_ports", [])
+        if not ports_cfg:
+            continue
+        if did == "zbook-wifi":
+            host_ip = zbook
+        else:
+            host_ip = next(
+                (ip for ip in d.get("ips", []) if re.match(r"^\d+\.\d+\.\d+\.\d+$", ip)),
+                None,
+            )
+        if not host_ip:
+            continue
+        for port in ports_cfg:
+            if isinstance(port, tuple):
+                port = port[0]
+            if isinstance(port, int):
+                d.setdefault("ports", {})[str(port)] = tcp_probe(host_ip, port)
+        if d.get("ports"):
+            d["ports_open"] = any(d["ports"].values())
 
     for key in ("homeassistant", "w09n-frame"):
         url = devices[key].get("probe_http")
@@ -2078,8 +2104,8 @@ def _glances_largest_fs(fs_rows: list) -> tuple[float, float]:
     return _bytes_to_gb(best_size), round(best_pct, 1)
 
 
-def fetch_glances(host: str, timeout: int = 8) -> dict | None:
-    base = f"http://{host}:61208"
+def fetch_glances(host: str, port: int = 61208, timeout: int = 8) -> dict | None:
+    base = f"http://{host}:{port}"
     for ver in (4, 3, 2):
         mem = json_get(f"{base}/api/{ver}/mem", timeout=timeout)
         cpu = json_get(f"{base}/api/{ver}/cpu", timeout=timeout)
@@ -2168,37 +2194,67 @@ def fetch_local_host_metrics() -> dict | None:
         return None
 
 
-def apply_live_metrics(devices: dict[str, dict], glances: dict | None, local: dict | None) -> None:
+def fetch_glances_for_devices(
+    devices: dict[str, dict],
+    *,
+    timeout: int = 8,
+) -> dict[str, dict]:
+    """Fetch Glances metrics for each hub in GLANCES_HOSTS when the port is open."""
+    out: dict[str, dict] = {}
+    for did, (host, port) in GLANCES_HOSTS.items():
+        if did not in devices:
+            continue
+        ports = devices[did].get("ports", {})
+        port_key = str(port)
+        if port_key in ports:
+            if not ports[port_key]:
+                continue
+        elif not tcp_probe(host, port):
+            continue
+        payload = fetch_glances(host, port=port, timeout=timeout)
+        if payload:
+            out[did] = payload
+    return out
+
+
+def apply_live_metrics(
+    devices: dict[str, dict],
+    glances_by_device: dict[str, dict] | None,
+    local: dict | None,
+) -> None:
     for d in devices.values():
         d.pop("metrics_live", None)
 
-    if glances:
-        host = {
-            "source": f"glances:{glances['api_version']}",
-            "ram_used_pct": glances["ram_used_pct"],
-            "storage_used_pct": glances["storage_used_pct"],
-            "cpu_load_pct": glances["cpu_load_pct"],
-            "cpu_cores": glances.get("cpu_cores"),
-            "cpu_name": glances.get("cpu_name"),
-        }
-        for did in ("zbook-wifi", "wsl-ubuntu"):
-            if did in devices:
-                devices[did]["metrics_live"] = dict(host)
-        if glances["storage_gb"] > 0 and "zbook-wifi" in devices:
-            static = DEVICE_CAPACITY.get("zbook-wifi", {})
-            if glances["storage_gb"] > static.get("storage_gb", 0) * 0.5:
-                devices["zbook-wifi"]["metrics_live"]["storage_gb_live"] = glances["storage_gb"]
+    if glances_by_device:
+        for did, glances in glances_by_device.items():
+            if did not in devices:
+                continue
+            host = {
+                "source": f"glances:{glances['api_version']}",
+                "ram_used_pct": glances["ram_used_pct"],
+                "storage_used_pct": glances["storage_used_pct"],
+                "cpu_load_pct": glances["cpu_load_pct"],
+                "cpu_cores": glances.get("cpu_cores"),
+                "cpu_name": glances.get("cpu_name"),
+            }
+            devices[did]["metrics_live"] = dict(host)
+            if glances["storage_gb"] > 0:
+                static = DEVICE_CAPACITY.get(did, {})
+                if glances["storage_gb"] > static.get("storage_gb", 0) * 0.5:
+                    devices[did]["metrics_live"]["storage_gb_live"] = glances["storage_gb"]
 
-        for cname, did in GLANCES_CONTAINER_MAP.items():
-            c = glances.get("containers", {}).get(cname)
-            if c and did in devices:
-                devices[did]["metrics_live"] = {
-                    "source": f"glances:container:{cname}",
-                    "ram_used_pct": c.get("ram_used_pct"),
-                    "cpu_load_pct": c.get("cpu_load_pct"),
-                    "ram_gb_live": c.get("ram_gb"),
-                    "container_status": c.get("status"),
-                }
+        zbook_glances = glances_by_device.get("zbook-wifi")
+        if zbook_glances:
+            for cname, target_did in GLANCES_CONTAINER_MAP.items():
+                c = zbook_glances.get("containers", {}).get(cname)
+                if c and target_did in devices:
+                    devices[target_did]["metrics_live"] = {
+                        "source": f"glances:container:{cname}",
+                        "ram_used_pct": c.get("ram_used_pct"),
+                        "cpu_load_pct": c.get("cpu_load_pct"),
+                        "ram_gb_live": c.get("ram_gb"),
+                        "container_status": c.get("status"),
+                    }
 
     if local and "mac-primary" in devices:
         devices["mac-primary"]["metrics_live"] = local
@@ -2618,6 +2674,7 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
         "plug_diagnostics": snapshot.get("plug_diagnostics", []),
         "arp_discovered": snapshot.get("arp_discovered", 0),
         "glances": snapshot.get("glances"),
+        "glances_hosts": snapshot.get("glances_hosts", []),
         "medium_legend": {k: v["label"] for k, v in MEDIUM_META.items()},
         "saved_positions": load_positions(),
         "layout_seeds": dynamic_layout_seeds(devices, base_seeds),
@@ -2633,9 +2690,15 @@ def write_html(path: Path, payload: dict) -> None:
     path.write_text(template.replace("__NETWORK_DATA_JSON__", json_blob), encoding="utf-8")
 
 
-def generate(zbook: str, ha_token: str | None, *, glances_timeout: int = 8) -> dict:
+def generate(
+    zbook: str,
+    ha_token: str | None,
+    *,
+    ha_host: str = HOME_ASSISTANT_HOST,
+    glances_timeout: int = 8,
+) -> dict:
     generated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ha_base = f"http://{zbook}:8123"
+    ha_base = f"http://{ha_host}:8123"
     ha_states = ha_fetch_states(ha_base, ha_token or "")
     connections = [dict(c) for c in CONNECTIONS]
     devices = {k: dict(v) for k, v in DEVICES.items()}
@@ -2646,7 +2709,7 @@ def generate(zbook: str, ha_token: str | None, *, glances_timeout: int = 8) -> d
     plugs_added, plug_diagnostics = expand_ha_smart_plugs(devices, connections, ha_states, active_arp)
     merged = consolidate_devices(devices, connections, ha_states, active_arp)
     device_links(devices, connections)
-    snapshot = probe_devices(devices, zbook, ha_token, connections, ha_states)
+    snapshot = probe_devices(devices, zbook, ha_token, connections, ha_states, ha_host=ha_host)
     snapshot["generated"] = generated
     snapshot["ha_discovered"] = ha_added
     snapshot["ha_plugs_discovered"] = plugs_added
@@ -2656,12 +2719,11 @@ def generate(zbook: str, ha_token: str | None, *, glances_timeout: int = 8) -> d
     snapshot["active_arp_count"] = len(active_arp)
     snapshot["devices_merged"] = len(merged)
     snapshot["router_registry"] = router_seeded
-    glances = fetch_glances(zbook, timeout=glances_timeout) if devices.get("zbook-wifi", {}).get("ports", {}).get("61208") else None
-    if glances is None and tcp_probe(zbook, 61208):
-        glances = fetch_glances(zbook, timeout=glances_timeout)
+    glances_by_device = fetch_glances_for_devices(devices, timeout=glances_timeout)
     local_metrics = fetch_local_host_metrics()
-    apply_live_metrics(devices, glances, local_metrics)
-    snapshot["glances"] = bool(glances)
+    apply_live_metrics(devices, glances_by_device, local_metrics)
+    snapshot["glances"] = bool(glances_by_device)
+    snapshot["glances_hosts"] = sorted(glances_by_device.keys())
     snapshot["local_metrics"] = bool(local_metrics)
 
     dev_dir = VAULT / "Devices"
@@ -2696,6 +2758,16 @@ def generate(zbook: str, ha_token: str | None, *, glances_timeout: int = 8) -> d
         print(f"[+] Router registry: {router_seeded} device(s) from router-clients.json")
     if merged:
         print(f"[+] Merged {len(merged)} duplicate node(s) · active LAN: {len(active_arp)} IP(s)")
+    if glances_by_device:
+        for did in snapshot["glances_hosts"]:
+            host, port = GLANCES_HOSTS[did]
+            g = glances_by_device[did]
+            print(
+                f"[+] Glances {did}: {host}:{port} · "
+                f"CPU {g['cpu_load_pct']}% · RAM {g['ram_used_pct']}%"
+            )
+    else:
+        print("[!] Glances: no hosts responded (check ports 61209 ZBook, 61208 Home Base)")
     for note in report_router_validation(devices, ha_states):
         print(f"[!] {note}")
     unlabeled = snapshot.get("arp_unlabeled") or []
@@ -3108,7 +3180,7 @@ async def _live_broadcast_server(
 
 
 async def _live_event_matrix_main(
-    zbook: str,
+    ha_host: str,
     ha_token: str,
     ws_bind: str,
     ws_port: int,
@@ -3116,14 +3188,14 @@ async def _live_event_matrix_main(
     devices = devices_for_live_registry()
     entity_index = build_entity_node_index(devices)
     live_ha_states: dict[str, dict] = {}
-    ha_base = f"http://{zbook}:8123"
+    ha_base = f"http://{ha_host}:8123"
     for entity_id, row in ha_fetch_states(ha_base, ha_token).items():
         live_ha_states[entity_id] = {
             "state": row.get("state", "unknown"),
             "attributes": row.get("attributes") or {},
         }
     hub = LiveBroadcastHub()
-    ha_ws_url = f"ws://{zbook}:8123/api/websocket"
+    ha_ws_url = f"ws://{ha_host}:8123/api/websocket"
 
     client_count = 0
 
@@ -3140,7 +3212,7 @@ async def _live_event_matrix_main(
 
 
 def start_live_event_matrix(
-    zbook: str,
+    ha_host: str,
     ha_token: str | None,
     *,
     ws_bind: str = "0.0.0.0",
@@ -3157,7 +3229,7 @@ def start_live_event_matrix(
 
     def run_async_loop() -> None:
         try:
-            asyncio.run(_live_event_matrix_main(zbook, ha_token, ws_bind, ws_port))
+            asyncio.run(_live_event_matrix_main(ha_host, ha_token, ws_bind, ws_port))
         except Exception as exc:
             print(f"[!] Live event matrix stopped: {exc}", file=sys.stderr)
 
@@ -3175,6 +3247,7 @@ def serve(
     interval: int,
     bind: str,
     *,
+    ha_host: str = HOME_ASSISTANT_HOST,
     ws_port: int = LIVE_WS_PORT_DEFAULT,
     ws_bind: str = "0.0.0.0",
 ) -> None:
@@ -3200,7 +3273,7 @@ def serve(
             return
         try:
             print(f"[*] {label}…")
-            generate(zbook, ha_token, glances_timeout=glances_timeout)
+            generate(zbook, ha_token, ha_host=ha_host, glances_timeout=glances_timeout)
             load_viewer_index()
             print(f"[+] {label} complete · {datetime.now():%H:%M:%S}")
         except Exception as exc:
@@ -3299,7 +3372,7 @@ def serve(
     except OSError:
         pass
 
-    start_live_event_matrix(zbook, ha_token, ws_bind=ws_bind, ws_port=ws_port)
+    start_live_event_matrix(ha_host, ha_token, ws_bind=ws_bind, ws_port=ws_port)
 
     print(f"[*] Serving {vault} on {bind}:{port} (topology refresh every {interval}s)")
     print(f"[*] Live HA event stream WebSocket on {ws_bind}:{ws_port}")
@@ -3323,7 +3396,8 @@ def serve(
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Homelab Obsidian + live network map")
-    ap.add_argument("--zbook", default="10.0.0.169")
+    ap.add_argument("--zbook", default=ZBOOK_HOST, help="ZBook LAN IP (Glances :61209, RTSP)")
+    ap.add_argument("--ha-host", default=HOME_ASSISTANT_HOST, help="Home Assistant host IP")
     ap.add_argument("--open", action="store_true", help="Open HTML graph in browser")
     ap.add_argument("--serve", action="store_true", help="Serve live dashboard on :8765")
     ap.add_argument("--bind", default="0.0.0.0", help="Bind address (0.0.0.0 = all LAN devices can open the link)")
@@ -3347,6 +3421,7 @@ def main() -> int:
             ha_token,
             args.interval,
             args.bind,
+            ha_host=args.ha_host,
             ws_port=args.ws_port,
             ws_bind=args.ws_bind,
         )
@@ -3356,14 +3431,14 @@ def main() -> int:
     if not ha_token:
         print("[!] HA token missing — phones/tablets will NOT be discovered")
         print(f"[i] Add token: {VAULT / 'ha-token.local'}  (see ha-token.local.example)")
-    generate(args.zbook, ha_token)
+    generate(args.zbook, ha_token, ha_host=args.ha_host)
     print(f"[+] Vault updated: {VAULT}")
     print(f"[+] Live dashboard: python3 {VAULT}/generate_network_map.py --serve")
 
     if args.watch:
         while True:
             time.sleep(args.watch)
-            generate(args.zbook, ha_token)
+            generate(args.zbook, ha_token, ha_host=args.ha_host)
             print(f"[+] Refreshed {datetime.now():%H:%M:%S}")
 
     if args.open:

@@ -2,10 +2,10 @@
 type: device
 status: online
 mode: standby
-latency_ms: 42.1
+latency_ms: 6.3
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-09 23:10:49
+generated: 2026-06-21 17:52:17
 ---
 
 # Minecraft Paper
@@ -16,7 +16,7 @@ generated: 2026-06-09 23:10:49
 |-------|-------|
 | **Reachability** | **online** |
 | **Mode** | **standby** |
-| **Ping avg** | 42.1 ms |
+| **Ping avg** | 6.3 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.169 |
 | **Tailscale** | — |

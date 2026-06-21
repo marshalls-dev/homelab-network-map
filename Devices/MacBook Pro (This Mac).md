@@ -2,10 +2,10 @@
 type: device
 status: online
 mode: active
-latency_ms: 0.3
+latency_ms: 0.5
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 16:38:28
+generated: 2026-06-21 17:52:17
 ---
 
 # MacBook Pro (This Mac)
@@ -16,7 +16,7 @@ generated: 2026-06-07 16:38:28
 |-------|-------|
 | **Reachability** | **online** |
 | **Mode** | **active** |
-| **Ping avg** | 0.3 ms |
+| **Ping avg** | 0.5 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.227 |
 | **Tailscale** | 100.88.199.80 |

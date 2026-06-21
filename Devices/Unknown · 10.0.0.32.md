@@ -1,29 +1,29 @@
 ---
 type: device
-status: online
-mode: active
-latency_ms: 130.2
-packet_loss_pct: 0.0
+status: offline
+mode: offline
+latency_ms: null
+packet_loss_pct: 100.0
 tags: [homelab, homeassistant]
 generated: 2026-06-21 17:52:17
 ---
 
-# Unknown · 10.0.0.200
+# Unknown · 10.0.0.32
 
 > Unlabeled LAN client · add to router-clients.json
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **online** |
-| **Mode** | **active** |
-| **Ping avg** | 130.2 ms |
-| **Packet loss** | 0.0% |
-| **Address** | 10.0.0.200 |
+| **Reachability** | **offline** |
+| **Mode** | **offline** |
+| **Ping avg** | — |
+| **Packet loss** | 100.0% |
+| **Address** | 10.0.0.32 |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-MAC 3a:95:e4:a7:d0:84
+MAC 80:54:e3:c0:d9:ae
 
 ## Services
 
@@ -31,4 +31,4 @@ MAC 3a:95:e4:a7:d0:84
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | LAN ARP discovery |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | LAN ARP discovery |

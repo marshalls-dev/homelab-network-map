@@ -2,28 +2,28 @@
 type: device
 status: online
 mode: active
-latency_ms: 113.2
+latency_ms: 75.4
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
 generated: 2026-06-21 17:52:17
 ---
 
-# ESP IoT · LED strip
+# Unknown · 10.0.0.78
 
-> Helix router · ESP_18FE85
+> Unlabeled LAN client · add to router-clients.json
 
 | Field | Value |
 |-------|-------|
 | **Reachability** | **online** |
 | **Mode** | **active** |
-| **Ping avg** | 113.2 ms |
+| **Ping avg** | 75.4 ms |
 | **Packet loss** | 0.0% |
-| **Address** | 10.0.0.150 |
+| **Address** | 10.0.0.78 |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-Helix: ESP_18FE85
+MAC f4:cf:a2:2c:6b:52
 
 ## Services
 

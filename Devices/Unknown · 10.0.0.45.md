@@ -2,21 +2,21 @@
 type: device
 status: online
 mode: active
-latency_ms: 42.6
+latency_ms: 33.0
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-07 16:38:28
+generated: 2026-06-21 17:52:17
 ---
 
 # Unknown · 10.0.0.45
 
-> Unlabeled LAN client · add to known-clients.json
+> Unlabeled LAN client · add to router-clients.json
 
 | Field | Value |
 |-------|-------|
 | **Reachability** | **online** |
 | **Mode** | **active** |
-| **Ping avg** | 42.6 ms |
+| **Ping avg** | 33.0 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.45 |
 | **Tailscale** | — |

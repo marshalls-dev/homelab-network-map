@@ -5,7 +5,7 @@ mode: active
 latency_ms: null
 packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-09 23:10:49
+generated: 2026-06-21 17:52:17
 ---
 
 # WSL Ubuntu

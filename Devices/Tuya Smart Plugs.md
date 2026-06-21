@@ -5,7 +5,7 @@ mode: unknown
 latency_ms: null
 packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-09 23:10:49
+generated: 2026-06-21 17:52:17
 ---
 
 # Tuya Smart Plugs
@@ -20,7 +20,7 @@ generated: 2026-06-09 23:10:49
 | **Packet loss** | — |
 | **Address** | — |
 | **Tailscale** | — |
-| **HA state** | Plug 1 · Desk: off; Plug 2 · Shed: off; Plug 3 · Command Central: off |
+| **HA state** | — |
 
 ## Hardware
 Plug 1 Desk · Plug 2 Shed · Plug 3 Command Central
