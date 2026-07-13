@@ -1,29 +1,29 @@
 ---
 type: device
-status: offline
-mode: offline
+status: unknown
+mode: unknown
 latency_ms: null
-packet_loss_pct: 100.0
+packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-09 23:10:49
+generated: 2026-07-12 12:00:00
 ---
 
 # Tuya LED Strip
 
-> Helix · CT-LEDstrip-58cae0
+> Helix catalog · CT-LEDstrip-58cae0
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **offline** |
-| **Mode** | **offline** |
+| **Reachability** | **unknown** |
+| **Mode** | **unknown** |
 | **Ping avg** | — |
-| **Packet loss** | 100.0% |
-| **Address** | 10.0.0.87 |
+| **Packet loss** | — |
+| **Address** | — |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-Helix: CT-LEDstrip-58cae0 · 94:B9:7E:58:CA:E0
+Helix: CT-LEDstrip-58cae0
 
 ## Services
 
@@ -31,4 +31,4 @@ Helix: CT-LEDstrip-58cae0 · 94:B9:7E:58:CA:E0
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Helix router registry |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Helix catalog · offline OK |

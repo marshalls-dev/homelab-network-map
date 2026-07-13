@@ -8,9 +8,9 @@ tags: [homelab, homeassistant]
 generated: 2026-07-12 12:00:00
 ---
 
-# Fire Tablet
+# LG Basement Projector
 
-> Primary phone · HA Companion
+> Basement display · webOS · HDMI from Xbox
 
 | Field | Value |
 |-------|-------|
@@ -18,17 +18,22 @@ generated: 2026-07-12 12:00:00
 | **Mode** | **offline** |
 | **Ping avg** | — |
 | **Packet loss** | 100.0% |
-| **Address** | 10.0.0.182, 10.0.0.58 |
+| **Address** | 10.0.0.143 |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-Catalog entry
+LG PF1500W · webOS PJTR
 
 ## Services
+- webOS :3000
+- Wi‑Fi management
+
+## Port check
+- **3000**: closed
 
 
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Known client · catalog |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | LG PF1500W · webOS management |

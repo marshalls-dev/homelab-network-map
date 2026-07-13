@@ -96,6 +96,12 @@
       "short": "Xbox",
       "personality": "edge"
     },
+    "LGwebOSPJTRPF1500W": {
+      "id": "basement-projector",
+      "name": "LG Basement Projector",
+      "short": "Projector",
+      "personality": "display"
+    },
     "QCA4002": {
       "id": "lg-washer",
       "name": "LG Washer",

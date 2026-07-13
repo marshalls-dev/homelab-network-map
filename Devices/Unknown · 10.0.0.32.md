@@ -1,11 +1,11 @@
 ---
 type: device
-status: offline
-mode: offline
+status: online
+mode: active
 latency_ms: null
 packet_loss_pct: 100.0
 tags: [homelab, homeassistant]
-generated: 2026-06-21 17:52:17
+generated: 2026-07-12 12:00:00
 ---
 
 # Unknown · 10.0.0.32
@@ -14,8 +14,8 @@ generated: 2026-06-21 17:52:17
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **offline** |
-| **Mode** | **offline** |
+| **Reachability** | **online** |
+| **Mode** | **active** |
 | **Ping avg** | — |
 | **Packet loss** | 100.0% |
 | **Address** | 10.0.0.32 |
@@ -31,4 +31,4 @@ MAC 80:54:e3:c0:d9:ae
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | LAN ARP discovery |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | LAN ARP discovery |

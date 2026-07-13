@@ -2,9 +2,19 @@
 # Start the live network map, or open it if already healthy.
 set -euo pipefail
 
-VAULT="${HOME}/HomelabNetwork"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
+VAULT="${HOMELAB_VAULT:-$HOME/HomelabNetwork}"
 PORT=8765
 URL="http://127.0.0.1:${PORT}/network-graph.html"
+
+# If repo and live vault differ, offer sync when template is newer.
+if [[ "$REPO" != "$VAULT" && -f "$REPO/network-graph-template.html" && -f "$VAULT/network-graph-template.html" ]]; then
+  if [[ "$REPO/network-graph-template.html" -nt "$VAULT/network-graph-template.html" ]]; then
+    echo "Repo is newer than $VAULT — syncing before start…"
+    bash "$SCRIPT_DIR/sync-to-live-vault.sh"
+  fi
+fi
 
 cd "$VAULT" || {
   echo "HomelabNetwork folder not found at $VAULT"
@@ -37,11 +47,17 @@ stop_listeners() {
 }
 
 if is_healthy; then
-  echo "Homelab Network Map is already running."
-  echo "Opening: $URL"
-  open "$URL"
-  read -r -p "Press Enter to close..."
-  exit 0
+  if ! curl -sf --max-time 3 "$URL" | grep -q 'basement-media'; then
+    echo "Dashboard on :$PORT is stale (missing Basement media preset) — syncing and restarting…"
+    bash "$SCRIPT_DIR/sync-to-live-vault.sh"
+    stop_listeners
+  else
+    echo "Homelab Network Map is already running."
+    echo "Opening: $URL"
+    open "$URL"
+    read -r -p "Press Enter to close..."
+    exit 0
+  fi
 fi
 
 if [ -n "$(listeners)" ]; then

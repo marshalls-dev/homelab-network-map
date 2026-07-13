@@ -1,21 +1,21 @@
 ---
 type: device
-status: offline
-mode: offline
+status: online
+mode: active
 latency_ms: null
 packet_loss_pct: 100.0
 tags: [homelab, homeassistant]
-generated: 2026-06-09 23:10:49
+generated: 2026-07-12 12:00:00
 ---
 
 # Xbox One
 
-> Helix · XboxOne
+> Basement game + media client
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **offline** |
-| **Mode** | **offline** |
+| **Reachability** | **online** |
+| **Mode** | **active** |
 | **Ping avg** | — |
 | **Packet loss** | 100.0% |
 | **Address** | 10.0.0.145 |
@@ -23,12 +23,17 @@ generated: 2026-06-09 23:10:49
 | **HA state** | — |
 
 ## Hardware
-Helix: XboxOne · 98:5F:D3:18:9A:2D
+Xbox One · Minecraft Bedrock · Jellyfin app
 
 ## Services
-
+- Jellyfin client
+- Minecraft Bedrock LAN
 
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Helix router registry |
+| → [[Devices/Phantom Proxy|Phantom Proxy]] | Minecraft Bedrock (UDP) | bidirectional | data | available | LAN discovery UDP :19132 · Friends tab |
+| → [[Devices/Minecraft Paper|Minecraft Paper]] | Minecraft Bedrock (UDP) | bidirectional | data | available | Bedrock gameplay · Geyser/Floodgate |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | Basement Xbox · LAN |
+| → [[Devices/LG Basement Projector|LG Basement Projector]] | HDMI video | downstream | data | degraded | HDMI video → projector screen |
+| → [[Devices/Jellyfin|Jellyfin]] | HTTP / Web UI | bidirectional | data | available | Jellyfin app · streams from ZBook |

@@ -1,22 +1,22 @@
 ---
 type: device
 status: online
-mode: active
-latency_ms: 84.7
+mode: standby
+latency_ms: 109.8
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-21 17:52:17
+generated: 2026-07-12 12:00:00
 ---
 
 # ESP IoT · plug
 
-> Helix router · ESP_DA27EA
+> Helix catalog · ESP_DA27EA
 
 | Field | Value |
 |-------|-------|
 | **Reachability** | **online** |
-| **Mode** | **active** |
-| **Ping avg** | 84.7 ms |
+| **Mode** | **standby** |
+| **Ping avg** | 109.8 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.105 |
 | **Tailscale** | — |
@@ -31,4 +31,4 @@ Helix: ESP_DA27EA
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | LAN ARP discovery |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | Helix catalog · offline OK |

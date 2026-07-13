@@ -48,6 +48,8 @@ MEDIUM_META = {
     "logical": {"label": "Logical / documented link", "color": "#78909c", "dashes": [2, 8]},
     "bluetooth": {"label": "Bluetooth (personal)", "color": "#4fc3f7", "dashes": [3, 5]},
     "ha_mobile": {"label": "Home Assistant app", "color": "#26a69a", "dashes": [6, 2]},
+    "bedrock": {"label": "Minecraft Bedrock (UDP)", "color": "#76ff03", "dashes": [4, 2]},
+    "hdmi": {"label": "HDMI video", "color": "#ff6e40", "dashes": False},
 }
 
 # Always rendered (homelab core) even when not in current ARP/router scan.
@@ -55,12 +57,16 @@ ALWAYS_ON_IDS = frozenset(
     {
         "router-gateway",
         "zbook-wifi",
+        "old-macbook",
         "wsl-ubuntu",
         "homeassistant",
         "minecraft-server",
         "minecraft-phantom",
+        "jellyfin-server",
         "kitchen-speaker",
         "smart-plugs",
+        "xbox-one",
+        "basement-projector",
     }
 )
 
@@ -102,6 +108,11 @@ SCANNER_DEVICE_ALIASES = {
 
 EXTRA_DEVICES_FILE = VAULT / "extra-devices.json"
 HA_TOKEN_FILES = (VAULT / "ha-token.local", VAULT / ".ha-token")
+JELLYFIN_CRED_FILES = (
+    VAULT / "jellyfin.local",
+    VAULT.parent / "homeassistant" / "jellyfin.credentials",
+)
+LAYOUT_PIN_IDS = frozenset({"xbox-one", "basement-projector"})
 KNOWN_CLIENTS_FILE = VAULT / "known-clients.json"
 ROUTER_CLIENTS_FILE = VAULT / "router-clients.json"
 HELIX_ROUTER_FILE = VAULT / "helix-router.json"
@@ -125,9 +136,9 @@ DEVICES: dict[str, dict] = {
         "ips": ["10.0.0.169"],
         "tailscale": ["100.97.161.68"],
         "hardware": "HP ZBook · DESKTOP-D1H9I0P",
-        "services": ["Glances :61209", "Basement RTSP :8554", "SMB ZBookShare :445", "Ollama :11434"],
+        "services": ["Glances :61209", "Basement RTSP :8554", "Jellyfin :8096", "SMB ZBookShare :445", "Phantom LAN :19132", "Ollama :11434"],
         "power_profile": "always_on",
-        "probe_ports": [61209, 8554, 445],
+        "probe_ports": [61209, 8096, 8554, 445],
         "ha_entities": ["camera.basement_webcam"],
     },
     "wsl-ubuntu": {
@@ -138,10 +149,10 @@ DEVICES: dict[str, dict] = {
         "ips": ["172.27.133.182"],
         "tailscale": [],
         "hardware": "Ubuntu WSL2 · Docker",
-        "services": ["Docker", "Home Assistant container", "Glances", "Minecraft Paper+Geyser"],
+        "services": ["Docker", "Minecraft Paper+Geyser"],
         "power_profile": "always_on",
         "lan_routable": False,
-        "infer_from": ["zbook-wifi", "homeassistant"],
+        "infer_from": ["zbook-wifi"],
     },
     "homeassistant": {
         "name": "Home Assistant",
@@ -170,14 +181,49 @@ DEVICES: dict[str, dict] = {
     "minecraft-phantom": {
         "name": "Phantom Proxy",
         "type": "service",
-        "role": "Xbox LAN discovery beacon · Docker host net",
-        "runs_on": "wsl-ubuntu",
+        "role": "Xbox LAN discovery · Windows native",
+        "runs_on": "zbook-wifi",
         "ips": ["10.0.0.169"],
         "tailscale": [],
-        "hardware": "Docker host network on ZBook",
-        "services": ["Bedrock LAN UDP :19132"],
+        "hardware": "phantom-windows.exe on ZBook",
+        "services": ["Bedrock LAN UDP :19132", "Proxy channel :19134"],
         "power_profile": "on_demand",
+        "probe_ports": [(19134, "tcp")],
         "infer_from": ["minecraft-server"],
+    },
+    "jellyfin-server": {
+        "name": "Jellyfin",
+        "type": "service",
+        "role": "Media server · VERBATIM HD (D:)",
+        "runs_on": "zbook-wifi",
+        "ips": ["10.0.0.169"],
+        "tailscale": [],
+        "hardware": "Native Windows app on ZBook (not Docker/WSL)",
+        "services": ["HTTP :8096", "Library scan · D:\\"],
+        "power_profile": "always_on",
+        "probe_http": f"http://{ZBOOK_HOST}:8096/System/Info/Public",
+    },
+    "basement-projector": {
+        "name": "LG Basement Projector",
+        "type": "client",
+        "role": "Basement display · webOS · HDMI from Xbox",
+        "ips": ["10.0.0.143"],
+        "tailscale": [],
+        "hardware": "LG PF1500W · webOS PJTR",
+        "services": ["webOS :3000", "Wi‑Fi management"],
+        "power_profile": "display_always_on",
+        "probe_ports": [3000],
+        "probe_http": "http://10.0.0.143:3000/",
+    },
+    "xbox-one": {
+        "name": "Xbox One",
+        "type": "client",
+        "role": "Basement game + media client",
+        "ips": ["10.0.0.145"],
+        "tailscale": [],
+        "hardware": "Xbox One · Minecraft Bedrock · Jellyfin app",
+        "services": ["Jellyfin client", "Minecraft Bedrock LAN"],
+        "power_profile": "standby_capable",
     },
     "mac-primary": {
         "name": "MacBook Pro (This Mac)",
@@ -242,28 +288,38 @@ DEVICES: dict[str, dict] = {
     },
 }
 
+STATIC_DEVICE_IDS = frozenset(DEVICES.keys())
+CATALOG_MOBILE_IDS = frozenset(
+    {"marshall-iphone", "wife-iphone", "family-ipad", "macbook-air", "galaxy-tab"}
+)
+
 CONNECTIONS: list[dict] = [
     {"from": "router-gateway", "to": "zbook-wifi", "medium": "wifi_5g", "traffic": "routing", "direction": "bidirectional", "note": "ZBook wireless uplink"},
     {"from": "router-gateway", "to": "mac-primary", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Daily driver Mac"},
-    {"from": "router-gateway", "to": "old-macbook", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Family Mac"},
+    {"from": "router-gateway", "to": "old-macbook", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Home Base Mac · primary HA host"},
     {"from": "router-gateway", "to": "w09n-frame", "medium": "wifi_2g", "traffic": "routing", "direction": "bidirectional", "note": "Frame on 2.4 GHz SSID"},
     {"from": "router-gateway", "to": "kitchen-speaker", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Google Home Mini"},
     {"from": "router-gateway", "to": "smart-plugs", "medium": "wifi_2g", "traffic": "routing", "direction": "bidirectional", "note": "Tuya Wi-Fi plugs"},
     {"from": "zbook-wifi", "to": "wsl-ubuntu", "medium": "docker_bridge", "traffic": "management", "direction": "bidirectional", "note": "Hyper-V virtual switch"},
-    {"from": "zbook-wifi", "to": "homeassistant", "medium": "portproxy", "traffic": "data", "direction": "bidirectional", "note": ":8123 LAN bridge"},
-    {"from": "wsl-ubuntu", "to": "homeassistant", "medium": "docker_bridge", "traffic": "data", "direction": "bidirectional", "note": "HA container bind mount"},
+    {"from": "old-macbook", "to": "homeassistant", "medium": "docker_bridge", "traffic": "data", "direction": "bidirectional", "note": "Docker Compose on Home Base Mac"},
     {"from": "wsl-ubuntu", "to": "minecraft-server", "medium": "docker_bridge", "traffic": "data", "direction": "bidirectional", "note": "Paper server container"},
-    {"from": "wsl-ubuntu", "to": "minecraft-phantom", "medium": "docker_bridge", "traffic": "data", "direction": "bidirectional", "note": "Host-network phantom"},
-    {"from": "minecraft-server", "to": "minecraft-phantom", "medium": "logical", "traffic": "data", "direction": "bidirectional", "note": "Geyser backend :19133"},
-    {"from": "mac-primary", "to": "zbook-wifi", "medium": "wifi", "traffic": "management", "direction": "bidirectional", "note": "SSH · SMB · HA UI"},
-    {"from": "mac-primary", "to": "homeassistant", "medium": "http", "traffic": "management", "direction": "bidirectional", "note": "Dashboard · Obsidian refresh"},
+    {"from": "minecraft-phantom", "to": "minecraft-server", "medium": "portproxy", "traffic": "data", "direction": "bidirectional", "note": "Windows Phantom → WSL Geyser :19133"},
+    {"from": "xbox-one", "to": "minecraft-phantom", "medium": "bedrock", "traffic": "data", "direction": "bidirectional", "note": "LAN discovery UDP :19132 · Friends tab"},
+    {"from": "xbox-one", "to": "minecraft-server", "medium": "bedrock", "traffic": "data", "direction": "bidirectional", "note": "Bedrock gameplay · Geyser/Floodgate"},
+    {"from": "router-gateway", "to": "xbox-one", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "Basement Xbox · LAN"},
+    {"from": "router-gateway", "to": "basement-projector", "medium": "wifi", "traffic": "routing", "direction": "bidirectional", "note": "LG PF1500W · webOS management"},
+    {"from": "xbox-one", "to": "basement-projector", "medium": "hdmi", "traffic": "data", "direction": "downstream", "note": "HDMI video → projector screen"},
+    {"from": "xbox-one", "to": "jellyfin-server", "medium": "http", "traffic": "data", "direction": "bidirectional", "note": "Jellyfin app · streams from ZBook"},
+    {"from": "zbook-wifi", "to": "jellyfin-server", "medium": "logical", "traffic": "management", "direction": "bidirectional", "note": "Native Windows service · reads D:\\"},
+    {"from": "mac-primary", "to": "zbook-wifi", "medium": "wifi", "traffic": "management", "direction": "bidirectional", "note": "SSH · SMB · basement services"},
+    {"from": "mac-primary", "to": "homeassistant", "medium": "http", "traffic": "management", "direction": "bidirectional", "note": "HA UI · dashboards"},
+    {"from": "mac-primary", "to": "old-macbook", "medium": "wifi", "traffic": "management", "direction": "bidirectional", "note": "Home Base Mac · deploy"},
     {"from": "mac-primary", "to": "zbook-wifi", "medium": "tailscale", "traffic": "routing", "direction": "bidirectional", "note": "Remote access overlay"},
-    {"from": "old-macbook", "to": "zbook-wifi", "medium": "wifi", "traffic": "management", "direction": "bidirectional", "note": "LAN file share"},
-    {"from": "w09n-frame", "to": "homeassistant", "medium": "http", "traffic": "data", "direction": "downstream", "note": "Loads /frame-panel tiles"},
-    {"from": "w09n-frame", "to": "zbook-wifi", "medium": "wifi_2g", "traffic": "data", "direction": "downstream", "note": "HTTP to HA portproxy"},
+    {"from": "old-macbook", "to": "zbook-wifi", "medium": "wifi", "traffic": "management", "direction": "bidirectional", "note": "LAN · basement camera ingest"},
+    {"from": "w09n-frame", "to": "homeassistant", "medium": "http", "traffic": "data", "direction": "downstream", "note": "Loads /frame-panel from Home Base HA"},
     {"from": "homeassistant", "to": "kitchen-speaker", "medium": "cast", "traffic": "control", "direction": "downstream", "note": "TTS · media control"},
     {"from": "homeassistant", "to": "smart-plugs", "medium": "cloud_api", "traffic": "control", "direction": "downstream", "note": "Tuya integration"},
-    {"from": "zbook-wifi", "to": "homeassistant", "medium": "rtsp", "traffic": "upstream", "note": "Basement webcam via go2rtc"},
+    {"from": "zbook-wifi", "to": "homeassistant", "medium": "rtsp", "traffic": "upstream", "direction": "downstream", "note": "Basement RTSP → go2rtc on Home Base Mac"},
 ]
 
 HA_ENTITIES = {
@@ -332,6 +388,85 @@ def http_probe(url: str) -> dict:
         return {"online": None, "code": None}
     code = run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", url]).strip()
     return {"online": code in ("200", "301", "302", "401"), "code": code}
+
+
+def load_jellyfin_credentials() -> dict[str, str]:
+    for path in JELLYFIN_CRED_FILES:
+        if not path.exists():
+            continue
+        out: dict[str, str] = {}
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            out[key.strip().lower()] = val.strip()
+        if out.get("jellyfin_url") and out.get("jellyfin_user") and out.get("jellyfin_password"):
+            return out
+    return {}
+
+
+def jellyfin_active_sessions(creds: dict[str, str]) -> list[dict]:
+    if not shutil.which("curl"):
+        return []
+    base = creds["jellyfin_url"].rstrip("/")
+    auth_body = json.dumps(
+        {"Username": creds["jellyfin_user"], "Pw": creds["jellyfin_password"]},
+        ensure_ascii=True,
+    )
+    auth_out = run(
+        [
+            "curl",
+            "-s",
+            "--max-time",
+            "8",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            auth_body,
+            f"{base}/Users/authenticatebyname",
+        ]
+    )
+    if not auth_out.strip():
+        return []
+    try:
+        token = json.loads(auth_out).get("AccessToken")
+    except json.JSONDecodeError:
+        return []
+    if not token:
+        return []
+    sess_out = run(
+        [
+            "curl",
+            "-s",
+            "--max-time",
+            "8",
+            "-H",
+            f"X-Emby-Token: {token}",
+            f"{base}/Sessions",
+        ]
+    )
+    if not sess_out.strip():
+        return []
+    try:
+        rows = json.loads(sess_out)
+    except json.JSONDecodeError:
+        return []
+    return rows if isinstance(rows, list) else []
+
+
+def xbox_client_activity(sessions: list[dict], xbox_ip: str = "10.0.0.145") -> str | None:
+    for row in sessions:
+        if not isinstance(row, dict):
+            continue
+        endpoint = str(row.get("RemoteEndPoint") or "")
+        client = f"{row.get('Client', '')} {row.get('DeviceName', '')} {row.get('AppName', '')}".lower()
+        if xbox_ip not in endpoint and "xbox" not in client:
+            continue
+        play = row.get("PlayState") if isinstance(row.get("PlayState"), dict) else {}
+        if row.get("IsActive") or play.get("IsPlaying") or (play.get("IsPaused") is False and play.get("PositionTicks")):
+            return "jellyfin"
+    return None
 
 
 def resolve_ha_token() -> str | None:
@@ -491,6 +626,195 @@ def load_extra_devices(devices: dict[str, dict], connections: list[dict]) -> Non
                     "note": item.get("parent_note", "Personal peripheral"),
                 }
             )
+
+
+def _ensure_router_link(connections: list[dict], did: str, medium: str = "wifi", note: str = "Catalog device") -> None:
+    if any(c.get("from") == "router-gateway" and c.get("to") == did for c in connections):
+        return
+    connections.append(
+        {
+            "from": "router-gateway",
+            "to": did,
+            "medium": medium,
+            "traffic": "routing",
+            "direction": "bidirectional",
+            "note": note,
+        }
+    )
+
+
+def seed_catalog_clients(devices: dict[str, dict], connections: list[dict]) -> int:
+    """Keep known phones/tablets/clients in the graph even when off-LAN."""
+    by_ip, by_mac = load_known_client_labels()
+    added = 0
+    seen_ids: set[str] = set()
+
+    def upsert(did: str, spec: dict, ip: str | None = None) -> None:
+        nonlocal added
+        if did in seen_ids:
+            return
+        seen_ids.add(did)
+        name = spec.get("name", did)
+        short = spec.get("short") or name[:16]
+        personality = spec.get("personality", "edge")
+        if did not in devices:
+            devices[did] = {
+                "name": name,
+                "type": spec.get("type", "client"),
+                "role": spec.get("role", "Known client · catalog"),
+                "ips": [ip] if ip else [],
+                "tailscale": [],
+                "hardware": spec.get("hardware", "Catalog entry"),
+                "services": spec.get("services", []),
+                "power_profile": spec.get("power_profile", "standby_capable"),
+                "catalog": True,
+            }
+            DEVICE_CAPACITY[did] = {
+                **DEFAULT_CAPACITY,
+                **(spec.get("capacity") or {}),
+                "short": short,
+                "personality": personality,
+                "capacity_note": "Known client (catalog)",
+            }
+            added += 1
+        else:
+            devices[did]["catalog"] = True
+            if ip and ip not in devices[did].get("ips", []):
+                devices[did].setdefault("ips", []).append(ip)
+        _ensure_router_link(connections, did, spec.get("medium", "wifi"), "Known client · catalog")
+
+    for ip, spec in by_ip.items():
+        if not isinstance(spec, dict):
+            continue
+        did = spec.get("id")
+        if not did:
+            continue
+        upsert(did, spec, ip)
+
+    for spec in by_mac.values():
+        if not isinstance(spec, dict):
+            continue
+        did = spec.get("id")
+        if not did:
+            continue
+        upsert(did, spec)
+
+    for did in CATALOG_MOBILE_IDS:
+        if did in devices:
+            devices[did]["catalog"] = True
+            _ensure_router_link(connections, did, "wifi", "Mobile · catalog")
+    return added
+
+
+def seed_catalog_from_helix(devices: dict[str, dict], connections: list[dict]) -> int:
+    """Fallback when router-clients.json is missing — materialize helix-router.json entries."""
+    if load_router_client_entries():
+        return 0
+    added = 0
+    for hostname, spec in load_helix_hints().items():
+        if not isinstance(spec, dict):
+            continue
+        did = resolve_router_canonical_id(spec.get("id") or hostname)
+        if did in devices:
+            devices[did]["catalog"] = True
+            continue
+        name = spec.get("name") or hostname.replace("_", " ").replace("-", " ")
+        personality = spec.get("personality") or router_personality(hostname, did)
+        devices[did] = {
+            "name": name,
+            "type": "client" if personality == "edge" else "iot",
+            "role": spec.get("role") or f"Helix catalog · {hostname}",
+            "ips": [],
+            "tailscale": [],
+            "hardware": spec.get("hardware") or f"Helix: {hostname}",
+            "services": [],
+            "power_profile": "standby_capable",
+            "catalog": True,
+            "helix_catalog": True,
+        }
+        DEVICE_CAPACITY[did] = {
+            **DEFAULT_CAPACITY,
+            "short": spec.get("short") or name[:16],
+            "personality": personality,
+            "capacity_note": "Helix catalog (no router export)",
+        }
+        _ensure_router_link(connections, did, "wifi", "Helix catalog · offline OK")
+        added += 1
+    return added
+
+
+def seed_catalog_plugs(devices: dict[str, dict], connections: list[dict]) -> int:
+    """Materialize individual plug nodes from the smart-plugs registry even without HA API."""
+    sp = devices.get("smart-plugs")
+    if not sp:
+        return 0
+    added = 0
+    for ent in sp.get("ha_entities", []):
+        match = re.search(r"plug_(\d+)", ent)
+        if not match:
+            continue
+        did = f"plug-{match.group(1)}"
+        label = HA_ENTITIES.get(ent, ent)
+        if did not in devices:
+            devices[did] = {
+                "name": label,
+                "type": "iot",
+                "role": "Tuya smart plug",
+                "ips": [],
+                "tailscale": [],
+                "hardware": "Tuya Wi-Fi plug",
+                "services": [ent],
+                "power_profile": "switchable",
+                "ha_entity": ent,
+                "ha_plug": True,
+                "catalog": True,
+            }
+            DEVICE_CAPACITY[did] = {
+                "ram_gb": 0.016,
+                "storage_gb": 0.008,
+                "compute": 0.03,
+                "short": label[:18],
+                "personality": "sensor",
+                "capacity_note": "Tuya plug (catalog)",
+            }
+            added += 1
+        else:
+            devices[did]["catalog"] = True
+            devices[did]["ha_plug"] = True
+        _ensure_router_link(connections, did, "wifi_2g", "Tuya plug · catalog")
+        if "homeassistant" in devices:
+            key = ("homeassistant", did, "cloud_api")
+            if not any(
+                c.get("from") == key[0] and c.get("to") == key[1] and c.get("medium") == key[2]
+                for c in connections
+            ):
+                connections.append(
+                    {
+                        "from": "homeassistant",
+                        "to": did,
+                        "medium": "cloud_api",
+                        "traffic": "control",
+                        "direction": "downstream",
+                        "note": "Tuya via Home Assistant",
+                    }
+                )
+    return added
+
+
+def catalog_device_kept(did: str, device: dict) -> bool:
+    return (
+        did in STATIC_DEVICE_IDS
+        or did in ALWAYS_ON_IDS
+        or did in CATALOG_MOBILE_IDS
+        or did.startswith("plug-")
+        or bool(device.get("catalog"))
+        or bool(device.get("helix_catalog"))
+        or bool(device.get("manual"))
+        or bool(device.get("ha_entity"))
+        or bool(device.get("ha_plug"))
+        or bool(device.get("runs_on"))
+        or bool(device.get("router_registry"))
+    )
 
 
 def _merge_tracker_into_lan_device(devices: dict[str, dict], tracker_name: str, entity_id: str) -> str | None:
@@ -1488,35 +1812,41 @@ def filter_to_active_lan(
     connections: list[dict],
     active_ips: set[str],
 ) -> None:
-    """Drop stale LAN ghosts not in current ARP (= router-active proxy)."""
+    """Mark off-LAN devices instead of deleting catalog nodes."""
     remove: set[str] = set()
     for did, d in devices.items():
-        if did in ALWAYS_ON_IDS:
+        if catalog_device_kept(did, d):
+            ips = [ip for ip in d.get("ips", []) if re.match(r"^\d+\.\d+\.\d+\.\d+$", ip)]
+            if ips:
+                d["lan_arp"] = any(ip in active_ips for ip in ips)
+                if not d["lan_arp"]:
+                    d["off_lan"] = True
             continue
-        if d.get("router_registry"):
-            continue
+
         if d.get("stale") or did.endswith("-stale") or "stale arp" in d.get("name", "").lower():
             remove.add(did)
             continue
-        if d.get("runs_on"):
-            continue
-        if d.get("ha_plug"):
+        if d.get("runs_on") or d.get("ha_plug"):
             continue
         if not (d.get("discovered") or d.get("lan_arp") or did.startswith("arp-")):
             continue
-        ips = [ip for ip in d.get("ips", []) if ip]
+
+        ips = [ip for ip in d.get("ips", []) if re.match(r"^\d+\.\d+\.\d+\.\d+$", ip)]
         if not ips:
             if d.get("ha_entity") and did in ("marshall-iphone", "wife-iphone", "family-ipad", "old-macbook"):
                 continue
-            remove.add(did)
-            continue
-        if not any(ip in active_ips for ip in ips):
-            if d.get("ha_entity"):
-                continue
-            if d.get("stale") or did.endswith("-stale") or "stale" in d.get("name", "").lower():
+            if did.startswith("arp-"):
                 remove.add(did)
-                continue
+            continue
+
+        if any(ip in active_ips for ip in ips):
+            d["lan_arp"] = True
+            d.pop("off_lan", None)
+        elif did.startswith("arp-"):
             remove.add(did)
+        else:
+            d["off_lan"] = True
+
     for did in remove:
         del devices[did]
     connections[:] = [c for c in connections if c["from"] not in remove and c["to"] not in remove]
@@ -1604,6 +1934,12 @@ def device_links(devices: dict[str, dict], connections: list[dict] | None = None
 
 
 def resolve_mode(device: dict, ha_states: dict[str, dict]) -> str:
+    activity = device.get("client_activity")
+    if activity == "jellyfin":
+        return "streaming"
+    if activity == "minecraft":
+        return "playing"
+
     if device.get("ha_plug"):
         entity = device.get("ha_entity")
         if entity and entity in ha_states:
@@ -1631,6 +1967,12 @@ def resolve_mode(device: dict, ha_states: dict[str, dict]) -> str:
             return "playing" if state == "playing" else "idle" if state in ("idle", "paused", "off") else state
         if entity.startswith("camera."):
             return "streaming" if state == "idle" else state
+        if entity.startswith("device_tracker."):
+            if state == "home":
+                return "active"
+            if state == "not_home":
+                return "standby"
+            return state
         return state
 
     entities = device.get("ha_entities", [])
@@ -1708,14 +2050,23 @@ def probe_devices(
         if d.get("ports"):
             d["ports_open"] = any(d["ports"].values())
 
-    for key in ("homeassistant", "w09n-frame"):
-        url = devices[key].get("probe_http")
-        if url:
-            http = http_probe(url)
-            devices[key]["http_ok"] = http["online"]
-            devices[key]["http_code"] = http["code"]
-            if http["online"]:
-                devices[key]["online"] = True
+    for did, d in devices.items():
+        url = d.get("probe_http")
+        if not url:
+            continue
+        http = http_probe(url)
+        d["http_ok"] = http["online"]
+        d["http_code"] = http["code"]
+        if http["online"]:
+            d["online"] = True
+
+    jellyfin_creds = load_jellyfin_credentials()
+    if jellyfin_creds:
+        sessions = jellyfin_active_sessions(jellyfin_creds)
+        activity = xbox_client_activity(sessions)
+        if activity and "xbox-one" in devices:
+            devices["xbox-one"]["client_activity"] = activity
+            devices["xbox-one"]["jellyfin_sessions"] = len(sessions)
 
     for key in ("minecraft-server", "kitchen-speaker"):
         if key not in devices:
@@ -1745,8 +2096,6 @@ def probe_devices(
             d["online"] = False
 
     for d in devices.values():
-        if d.get("online") is not None:
-            continue
         ent = d.get("ha_entity") or ""
         if not ent.startswith("device_tracker.") or not ha_states:
             continue
@@ -1754,7 +2103,12 @@ def probe_devices(
         if not row:
             continue
         state = row.get("state")
+        # Phones often block ICMP while still on Wi‑Fi — trust Companion GPS over ping.
         if state in ("home", "not_home", "work", "office", "away"):
+            d["online"] = True
+
+    for d in devices.values():
+        if d.get("online") is False and d.get("lan_arp"):
             d["online"] = True
 
     for d in devices.values():
@@ -1796,17 +2150,54 @@ def probe_devices(
     if ts:
         devices["mac-primary"]["tailscale_live"] = "100.88.199.80" in ts or "mf-mac-905" in ts
 
+    xbox_activity = devices.get("xbox-one", {}).get("client_activity")
+    mc_service_up = bool(
+        devices.get("minecraft-server", {}).get("ports_open")
+        or devices.get("minecraft-phantom", {}).get("ports_open")
+    )
+
     path_health: list[dict] = []
     for c in conns:
         src = devices.get(c["from"], {})
         dst = devices.get(c["to"], {})
         src_ok = src.get("online") is True or src.get("http_ok") or src.get("ports_open")
         dst_ok = dst.get("online") is True or dst.get("http_ok") or dst.get("ports_open")
-        if c["medium"] in ("docker_bridge", "portproxy", "logical") and devices.get("zbook-wifi", {}).get("online"):
-            if c["to"] in ("wsl-ubuntu", "homeassistant", "minecraft-server", "minecraft-phantom"):
-                path_health.append({**c, "status": "up" if dst_ok or src_ok else "inferred"})
+        medium = c["medium"]
+        if medium == "hdmi":
+            if src_ok and dst_ok:
+                status = "up"
+            elif src_ok or dst_ok:
+                status = "degraded"
             else:
-                path_health.append({**c, "status": "up" if src_ok and dst_ok else "degraded" if src_ok or dst_ok else "down"})
+                status = "topology"
+        elif medium == "bedrock":
+            if xbox_activity == "minecraft":
+                status = "up"
+            elif mc_service_up and src_ok:
+                status = "available"
+            else:
+                status = "topology"
+        elif (
+            medium == "http"
+            and c["from"] == "xbox-one"
+            and c["to"] == "jellyfin-server"
+        ):
+            if xbox_activity == "jellyfin":
+                status = "up"
+            elif dst_ok:
+                status = "available"
+            else:
+                status = "down" if dst.get("online") is False else "topology"
+        elif medium in ("docker_bridge", "portproxy", "logical") and (
+            devices.get("zbook-wifi", {}).get("online") or devices.get("old-macbook", {}).get("online")
+        ):
+            if c["to"] in ("wsl-ubuntu", "minecraft-server", "minecraft-phantom"):
+                path_health.append({**c, "status": "up" if dst_ok or src_ok else "inferred"})
+                continue
+            if c["to"] == "homeassistant" and c["from"] == "old-macbook":
+                path_health.append({**c, "status": "up" if dst_ok or src_ok else "inferred"})
+                continue
+            status = "up" if src_ok and dst_ok else "degraded" if src_ok or dst_ok else "down"
         else:
             if src_ok and dst_ok:
                 status = "up"
@@ -1814,8 +2205,14 @@ def probe_devices(
                 status = "degraded"
             else:
                 status = "unknown" if src.get("online") is None and dst.get("online") is None else "down"
-            latencies = [x for x in (src.get("latency_ms"), dst.get("latency_ms")) if x is not None]
-            path_health.append({**c, "status": status, "latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else None})
+        latencies = [x for x in (src.get("latency_ms"), dst.get("latency_ms")) if x is not None]
+        path_health.append(
+            {
+                **c,
+                "status": status,
+                "latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else None,
+            }
+        )
 
     return {
         "generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -2028,7 +2425,24 @@ DEVICE_CAPACITY: dict[str, dict] = {
     "minecraft-phantom": {
         "ram_gb": 0.128, "storage_gb": 0.01, "compute": 0.06,
         "short": "Phantom", "personality": "beacon",
-        "capacity_note": "UDP LAN discovery proxy",
+        "capacity_note": "Windows UDP LAN proxy · Xbox Friends tab",
+    },
+    "jellyfin-server": {
+        "ram_gb": 0.5, "storage_gb": 0.25, "compute": 0.25,
+        "short": "Jellyfin", "personality": "service",
+        "capacity_note": "Windows native · serves D: drive over HTTP :8096",
+    },
+    "basement-projector": {
+        "ram_gb": 0.5, "storage_gb": 4, "compute": 0.15,
+        "short": "Projector", "personality": "display",
+        "capacity_note": "LG PF1500W webOS · HDMI display",
+        "viz_tier": "moon",
+        "label_boost": 1.35,
+    },
+    "xbox-one": {
+        "ram_gb": 4, "storage_gb": 500, "compute": 0.55,
+        "short": "Xbox", "personality": "edge",
+        "capacity_note": "Basement console · Jellyfin + Minecraft",
     },
     "mac-primary": {
         "ram_gb": 16, "storage_gb": 512, "compute": 0.78,
@@ -2327,9 +2741,11 @@ def dynamic_layout_seeds(devices: dict[str, dict], base: dict[str, list]) -> dic
     seeds = dict(base)
     nest_offsets = {
         "wsl-ubuntu": ("zbook-wifi", 52, 0.0),
-        "homeassistant": ("wsl-ubuntu", 34, 1.05),
+        "homeassistant": ("old-macbook", 38, 1.1),
         "minecraft-server": ("wsl-ubuntu", 40, 2.35),
-        "minecraft-phantom": ("wsl-ubuntu", 36, 3.55),
+        "minecraft-phantom": ("zbook-wifi", 44, 2.1),
+        "jellyfin-server": ("zbook-wifi", 48, 1.55),
+        "basement-projector": ("xbox-one", 52, 1.62),
     }
     for child, (parent, radius, angle) in nest_offsets.items():
         if child not in devices or parent not in seeds:
@@ -2357,7 +2773,18 @@ def dynamic_layout_seeds(devices: dict[str, dict], base: dict[str, list]) -> dic
 
 
 HOMELAB_CORE_IDS = frozenset(
-    {"zbook-wifi", "wsl-ubuntu", "homeassistant", "minecraft-server", "minecraft-phantom", "mac-primary"}
+    {
+        "zbook-wifi",
+        "old-macbook",
+        "wsl-ubuntu",
+        "homeassistant",
+        "minecraft-server",
+        "minecraft-phantom",
+        "jellyfin-server",
+        "basement-projector",
+        "xbox-one",
+        "mac-primary",
+    }
 )
 HA_NETWORK_IDS = frozenset(
     {
@@ -2373,7 +2800,7 @@ HA_NETWORK_IDS = frozenset(
     }
 )
 HA_MOBILE_IDS = frozenset({"marshall-iphone", "wife-iphone", "family-ipad", "old-macbook", "w09n-frame"})
-VIRTUAL_IDS = frozenset({"wsl-ubuntu", "homeassistant", "minecraft-server", "minecraft-phantom"})
+VIRTUAL_IDS = frozenset({"wsl-ubuntu", "homeassistant", "minecraft-server", "minecraft-phantom", "jellyfin-server"})
 HARDWARE_IDS = frozenset(
     {
         "zbook-wifi",
@@ -2386,6 +2813,7 @@ HARDWARE_IDS = frozenset(
         "w09n-frame",
         "kitchen-speaker",
         "xbox-one",
+        "basement-projector",
         "smart-fridge",
         "lg-washer",
         "lg-dryer",
@@ -2505,7 +2933,7 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
         ratio = cap / max_score if max_score else 0
         val = val_from_capability(cap, max_score)
         personality = spec.get("personality", "sensor")
-        tier = tier_from_ratio(ratio, personality)
+        tier = spec.get("viz_tier") or tier_from_ratio(ratio, personality)
         if d.get("ha_plug"):
             short = d["name"]
             label = d["name"]
@@ -2576,9 +3004,7 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
                 "cluster": clusters,
                 "views": views,
                 "router_online": d.get("router_online"),
-                "stale_registry": bool(
-                    d.get("stale") or d.get("router_online") is False or did.endswith("-stale")
-                ),
+                "stale_registry": bool(d.get("stale") or did.endswith("-stale")),
                 "ha_tracked": bool((d.get("ha_entity") or "").startswith("device_tracker.")),
                 "title": title,
                 "color": type_colors.get(d["type"], "#45475a"),
@@ -2589,7 +3015,7 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
                 "ram_gb": ram,
                 "storage_gb": storage,
                 "compute": spec.get("compute", 0.2),
-                "labelSize": round(3.8 + val * 0.22, 1),
+                "labelSize": round((3.8 + val * 0.22) * spec.get("label_boost", 1), 1),
                 "glow": round(glow, 2),
                 "pulse": pulse,
                 "metrics": {
@@ -2624,6 +3050,10 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
             edge_color = "#f38ba8"
         elif status == "degraded":
             edge_color = "#fab387"
+        elif status == "available":
+            edge_color = "#ffcc80"
+        elif status == "topology":
+            edge_color = "#546e7a"
 
         label_parts = [meta.get("label", c["medium"])]
         if c.get("latency_ms") is not None:
@@ -2640,7 +3070,16 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
             "label": " · ".join(label_parts),
             "title": c.get("note", ""),
             "color": edge_color,
-            "width": 2 if status == "up" else 1,
+            "status": status,
+            "width": (
+                6
+                if c["medium"] == "hdmi" and status == "up"
+                else 4
+                if c["medium"] == "hdmi"
+                else 2
+                if status in ("up", "available")
+                else 1
+            ),
             "directed": c.get("direction") not in ("bidirectional", None),
         }
         edges.append(edge)
@@ -2649,7 +3088,6 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
         "router-gateway": [0, 0, 0],
         "zbook-wifi": [180, 0, 0],
         "wsl-ubuntu": [260, -80, 30],
-        "homeassistant": [260, 60, -30],
         "mac-primary": [-160, 100, 50],
         "old-macbook": [-160, -100, 50],
         "w09n-frame": [80, 160, -80],
@@ -2660,7 +3098,9 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
         "plug-3": [-240, -20, 115],
         "plug-4": [-270, 15, 125],
         "minecraft-server": [340, -100, -50],
-        "minecraft-phantom": [400, -140, 0],
+        "minecraft-phantom": [280, -80, 40],
+        "jellyfin-server": [228, 22, -12],
+        "xbox-one": [50, 200, 15],
     }
 
     return {
@@ -2678,6 +3118,7 @@ def build_graph_payload(snapshot: dict, devices: dict[str, dict]) -> dict:
         "medium_legend": {k: v["label"] for k, v in MEDIUM_META.items()},
         "saved_positions": load_positions(),
         "layout_seeds": dynamic_layout_seeds(devices, base_seeds),
+        "layout_pins": sorted(LAYOUT_PIN_IDS),
         "nodes": nodes,
         "edges": edges,
     }
@@ -2703,7 +3144,10 @@ def generate(
     connections = [dict(c) for c in CONNECTIONS]
     devices = {k: dict(v) for k, v in DEVICES.items()}
     load_extra_devices(devices, connections)
+    catalog_clients = seed_catalog_clients(devices, connections)
+    catalog_plugs = seed_catalog_plugs(devices, connections)
     router_seeded = apply_router_registry(devices, connections)
+    helix_catalog = seed_catalog_from_helix(devices, connections)
     arp_added, arp_unlabeled, active_arp = discover_lan_clients(devices, connections)
     ha_added = expand_ha_devices(devices, connections, ha_states)
     plugs_added, plug_diagnostics = expand_ha_smart_plugs(devices, connections, ha_states, active_arp)
@@ -2719,6 +3163,9 @@ def generate(
     snapshot["active_arp_count"] = len(active_arp)
     snapshot["devices_merged"] = len(merged)
     snapshot["router_registry"] = router_seeded
+    snapshot["helix_catalog"] = helix_catalog
+    snapshot["catalog_clients"] = catalog_clients
+    snapshot["catalog_plugs"] = catalog_plugs
     glances_by_device = fetch_glances_for_devices(devices, timeout=glances_timeout)
     local_metrics = fetch_local_host_metrics()
     apply_live_metrics(devices, glances_by_device, local_metrics)
@@ -2754,6 +3201,12 @@ def generate(
             print(f"    · {row}")
     if arp_added:
         print(f"[+] LAN ARP: added {arp_added} client(s) from Wi‑Fi scan")
+    if catalog_clients:
+        print(f"[+] Catalog: {catalog_clients} known client(s) kept for full map")
+    if catalog_plugs:
+        print(f"[+] Catalog: {catalog_plugs} smart plug node(s) materialized")
+    if helix_catalog:
+        print(f"[+] Helix catalog: {helix_catalog} device(s) from helix-router.json (no router-clients.json)")
     if router_seeded:
         print(f"[+] Router registry: {router_seeded} device(s) from router-clients.json")
     if merged:
@@ -3323,6 +3776,12 @@ def serve(
                 self.wfile.write(body)
                 return
             super().do_GET()
+
+        def end_headers(self) -> None:
+            path = self.path.split("?", 1)[0]
+            if path in ("/network-graph.html", "/network-data.json"):
+                self.send_header("Cache-Control", "no-store, must-revalidate")
+            super().end_headers()
 
         def do_POST(self) -> None:
             if self.path != "/api/positions":

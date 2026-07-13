@@ -150,7 +150,7 @@
     var REFRESH_SEC = 30, LS_KEY = 'homelab-node-positions-v2';
     var lastClick = { id: null, t: 0 };
     var starFieldGroup = null;
-    var nestTetherGroup = null, viewerPinGroup = null;
+    var nestTetherGroup = null, hdmiTetherGroup = null, viewerPinGroup = null;
     var labelSprites = [], nodeVisuals = {};
     var pulseClock = 0;
     var LIVE_WS_PORT = 8766;
@@ -176,6 +176,7 @@
       { id: 'live-lan', label: 'Live LAN', focus: 'router-gateway' },
       { id: 'full', label: 'Full map', focus: null },
       { id: 'homelab-core', label: 'Homelab core', focus: 'zbook-wifi' },
+      { id: 'basement-media', label: 'Basement media', focus: 'xbox-one' },
       { id: 'ha-network', label: 'HA network', focus: 'homeassistant' },
       { id: 'hardware-only', label: 'Hardware', focus: 'zbook-wifi' },
       { id: 'iot-belt', label: 'IoT belt', focus: null },
@@ -185,6 +186,7 @@
       'live-lan': 'router-gateway',
       'full': null,
       'homelab-core': 'zbook-wifi',
+      'basement-media': 'xbox-one',
       'ha-network': 'homeassistant',
       'hardware-only': 'zbook-wifi',
       'iot-belt': null,
@@ -198,6 +200,13 @@
         Object.keys(viewState).forEach(function(k) {
           if (saved[k] !== undefined) viewState[k] = saved[k];
         });
+        // Full map always shows catalog + offline devices (fixes stale saved toggles).
+        if (viewState.preset === 'full') {
+          viewState.offlineMode = 'show';
+          viewState.hideStale = false;
+          viewState.hideVirtual = false;
+          viewState.hideRouter = false;
+        }
       } catch (e) { /* ignore */ }
     }
 
@@ -217,6 +226,13 @@
       });
     }
 
+    function applyHashPreset() {
+      var hash = (location.hash || '').replace(/^#/, '');
+      if (!hash) return;
+      if (!PRESET_DEFS.some(function(p) { return p.id === hash; })) return;
+      applyPresetDefaults(hash);
+    }
+
     function initViewControls() {
       var grid = document.getElementById('presetGrid');
       if (!grid || grid.dataset.ready) return;
@@ -231,6 +247,7 @@
         grid.appendChild(btn);
       });
       loadViewPrefs();
+      applyHashPreset();
       syncViewControls();
     }
 
@@ -271,6 +288,11 @@
         viewState.hideVirtual = false;
         viewState.hideRouter = false;
         viewState.hideStale = true;
+      } else if (presetId === 'basement-media') {
+        viewState.offlineMode = 'ghost';
+        viewState.hideVirtual = false;
+        viewState.hideRouter = false;
+        viewState.hideStale = true;
       }
     }
 
@@ -300,21 +322,27 @@
     }
 
     var PRESET_ANCHORS = {
-      'homelab-core': ['zbook-wifi'],
-      'ha-network': ['homeassistant', 'zbook-wifi'],
+      'homelab-core': ['zbook-wifi', 'xbox-one', 'basement-projector', 'jellyfin-server'],
+      'basement-media': ['xbox-one', 'basement-projector', 'jellyfin-server', 'zbook-wifi', 'router-gateway'],
+      'ha-network': ['homeassistant', 'old-macbook', 'zbook-wifi'],
       'hardware-only': ['zbook-wifi'],
       'iot-belt': [],
       'mobile-people': []
     };
 
     var HA_EDGE_MEDIA = ['ha_mobile', 'cast', 'cloud_api', 'http', 'rtsp'];
-    var CORE_EDGE_MEDIA = ['docker_bridge', 'portproxy', 'logical', 'tailscale', 'http', 'wifi', 'wifi_2g', 'wifi_5g'];
+    var CORE_EDGE_MEDIA = ['docker_bridge', 'portproxy', 'logical', 'hdmi', 'tailscale', 'http', 'wifi', 'wifi_2g', 'wifi_5g', 'bedrock'];
 
     function matchesPreset(node) {
       var v = nodeViews(node);
       var preset = viewState.preset;
       if (preset === 'full' || preset === 'live-lan') return true;
       if (preset === 'homelab-core') return !!v.homelab_core;
+      if (preset === 'basement-media') {
+        var id = node.id || '';
+        return id === 'xbox-one' || id === 'basement-projector' || id === 'jellyfin-server'
+          || id === 'zbook-wifi' || id === 'router-gateway' || id === 'minecraft-phantom' || id === 'minecraft-server';
+      }
       if (preset === 'ha-network') return !!v.ha_network;
       if (preset === 'hardware-only') return !!v.hardware;
       if (preset === 'iot-belt') return !!v.iot_belt;
@@ -342,6 +370,13 @@
       if (preset === 'homelab-core') {
         if (CORE_EDGE_MEDIA.indexOf(medium) >= 0) return true;
         return sid.indexOf('minecraft') >= 0 || tid.indexOf('minecraft') >= 0;
+      }
+      if (preset === 'basement-media') {
+        if (medium === 'hdmi' || medium === 'http' || medium === 'wifi' || medium === 'wifi_2g' || medium === 'wifi_5g') return true;
+        if (medium === 'logical' && (sid === 'zbook-wifi' || tid === 'zbook-wifi')) return true;
+        if (medium === 'bedrock' && (sid === 'xbox-one' || tid === 'xbox-one')) return true;
+        if (medium === 'portproxy' && (sid.indexOf('minecraft') >= 0 || tid.indexOf('minecraft') >= 0)) return true;
+        return false;
       }
       if (preset === 'iot-belt') {
         if (sid === 'router-gateway' || tid === 'router-gateway') return medium.indexOf('wifi') >= 0 || medium === 'wifi';
@@ -373,7 +408,16 @@
         }
       }
       if (viewState.hideStale && node.stale_registry) return { show: false, ghost: false };
-      if (node.status === 'offline') {
+      if (viewState.preset === 'full') {
+        if (viewState.offlineMode === 'hide' && (node.status === 'offline' || node.status === 'unknown')) {
+          return { show: false, ghost: false };
+        }
+        if (viewState.offlineMode === 'ghost' && (node.status === 'offline' || node.status === 'unknown')) {
+          return { show: true, ghost: true };
+        }
+        return { show: true, ghost: false };
+      }
+      if (node.status === 'offline' || node.status === 'unknown') {
         if (viewState.offlineMode === 'hide') return { show: false, ghost: false };
         if (viewState.offlineMode === 'ghost') return { show: true, ghost: true };
       }
@@ -406,7 +450,11 @@
         var sid = l.source.id || l.source;
         var tid = l.target.id || l.target;
         copy._ghost = !!(visible[sid] || visible[tid]);
-        if (viewState.hideDegradedLinks && copy.label && copy.label.indexOf('degraded') >= 0) copy._ghost = true;
+        if (viewState.hideDegradedLinks && copy.label && (
+          copy.label.indexOf('degraded') >= 0 ||
+          copy.label.indexOf('topology') >= 0 ||
+          copy.label.indexOf('available') >= 0
+        )) copy._ghost = true;
         return copy;
       });
 
@@ -469,6 +517,7 @@
       nodeVisuals = {};
       graph.graphData(gData);
       buildNestTethers(graph.scene(), gData.nodes);
+      buildHdmiTethers(graph.scene(), gData.links, gData.nodes);
       if (animateCamera) focusForPreset();
     }
 
@@ -595,6 +644,7 @@
     function buildGraphData(api) {
       var saved = getSavedPositions(api);
       var seeds = api.layout_seeds || {};
+      var layoutPins = api.layout_pins || [];
       var sourceNodes = api.nodes || [];
       if (hasIndividualPlugNodes(api)) {
         sourceNodes = sourceNodes.filter(function(n) { return n.id !== 'smart-plugs'; });
@@ -640,13 +690,14 @@
           router_online: n.router_online,
           ha_tracked: !!n.ha_tracked
         };
-        var p = posObj(saved[n.id] || seeds[n.id]);
+        var pinned = layoutPins.indexOf(n.id) >= 0;
+        var p = posObj(pinned ? seeds[n.id] : (saved[n.id] || seeds[n.id]));
         if (p) {
-          if (!saved[n.id]) {
+          if (!saved[n.id] || pinned) {
             p = { x: p.x * LAYOUT_SCALE, y: p.y * LAYOUT_SCALE, z: p.z * LAYOUT_SCALE };
           }
           node.x = p.x; node.y = p.y; node.z = p.z;
-          if (saved[n.id]) { node.fx = p.x; node.fy = p.y; node.fz = p.z; }
+          if (saved[n.id] || pinned) { node.fx = p.x; node.fy = p.y; node.fz = p.z; }
         }
         return node;
       });
@@ -662,6 +713,7 @@
           label: e.label,
           title: e.title,
           color: typeof e.color === 'string' ? e.color : '#78909c',
+          status: e.status || 'unknown',
           width: e.width || 1,
           directed: !!e.directed,
           medium: e.medium || ''
@@ -846,8 +898,10 @@
       rtsp: '#ff0044',
       http: '#cc44ff',
       logical: '#8899aa',
+      hdmi: '#ff6e40',
       bluetooth: '#00eeff',
-      ha_mobile: '#00ffcc'
+      ha_mobile: '#00ffcc',
+      bedrock: '#76ff03'
     };
 
     function linkParticleColor(link) {
@@ -861,7 +915,7 @@
       var label = (link.label || '').toLowerCase();
       if (label.indexOf('degraded') >= 0 || label.indexOf('down') >= 0 || label.indexOf('offline') >= 0) return 0;
       var medium = link.medium || '';
-      if (medium === 'ethernet' || medium === 'docker_bridge' || medium === 'portproxy' || medium === 'rtsp') return 0.0035;
+      if (medium === 'ethernet' || medium === 'docker_bridge' || medium === 'portproxy' || medium === 'rtsp' || medium === 'bedrock' || medium === 'hdmi') return 0.0035;
       if (medium === 'wifi_5g' || medium === 'tailscale' || medium === 'wifi' || medium === 'ha_mobile' || medium === 'http') return 0.002;
       if (medium === 'wifi_2g' || medium === 'cloud_api' || medium === 'logical' || medium === 'bluetooth' || medium === 'cast') return 0.0008;
       return 0.0015;
@@ -1011,7 +1065,7 @@
     }
 
     function isWiredMedium(medium) {
-      return medium === 'ethernet' || medium === 'docker_bridge' || medium === 'portproxy' || medium === 'rtsp' || medium === 'http';
+      return medium === 'ethernet' || medium === 'docker_bridge' || medium === 'portproxy' || medium === 'rtsp' || medium === 'http' || medium === 'hdmi';
     }
 
     function isWirelessMedium(medium) {
@@ -1037,6 +1091,45 @@
         new THREE.TetrahedronGeometry(5),
         new THREE.MeshBasicMaterial({ color: color, fog: false })
       );
+    }
+
+    function buildHdmiTethers(scene, links, nodes) {
+      if (hdmiTetherGroup && scene) scene.remove(hdmiTetherGroup);
+      hdmiTetherGroup = new THREE.Group();
+      var byId = {};
+      nodes.forEach(function(n) { byId[n.id] = n; });
+      links.forEach(function(link) {
+        if (link.medium !== 'hdmi' || link._ghost) return;
+        var sid = link.source.id || link.source;
+        var tid = link.target.id || link.target;
+        var geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        var line = new THREE.Line(
+          geom,
+          new THREE.LineBasicMaterial({
+            color: link.status === 'up' ? 0xff6e40 : 0x8d6e63,
+            transparent: true,
+            opacity: link.status === 'up' ? 0.85 : 0.35,
+            fog: false,
+            linewidth: 3
+          })
+        );
+        line.userData = { sourceId: sid, targetId: tid };
+        hdmiTetherGroup.add(line);
+      });
+      scene.add(hdmiTetherGroup);
+    }
+
+    function updateHdmiTethers() {
+      if (!hdmiTetherGroup || !gData) return;
+      hdmiTetherGroup.children.forEach(function(line) {
+        var src = gData.nodes.find(function(n) { return n.id === line.userData.sourceId; });
+        var dst = gData.nodes.find(function(n) { return n.id === line.userData.targetId; });
+        if (!src || !dst || src.x == null || dst.x == null) return;
+        line.geometry.setFromPoints([
+          new THREE.Vector3(src.x, src.y, src.z),
+          new THREE.Vector3(dst.x, dst.y, dst.z)
+        ]);
+      });
     }
 
     function buildNestTethers(scene, nodes) {
@@ -1117,6 +1210,7 @@
       });
 
       updateNestTethers();
+      updateHdmiTethers();
       updateViewerPinPosition();
 
       Object.keys(nodeVisuals).forEach(function(id) {
@@ -1147,8 +1241,8 @@
               mat.emissiveIntensity = (v.baseEmissive || 0.2) + (1 - flashT) * 0.35;
             }
           } else if (ghost) {
-            mat.color.copy(v.baseColor).multiplyScalar(0.18);
-            if (mat.emissive) { mat.emissive.copy(v.baseColor).multiplyScalar(0.08); mat.emissiveIntensity = 0.1; }
+            mat.color.copy(v.baseColor).multiplyScalar(0.42);
+            if (mat.emissive) { mat.emissive.copy(v.baseColor).multiplyScalar(0.18); mat.emissiveIntensity = 0.2; }
           } else if (offline) {
             mat.color.copy(v.baseColor).multiplyScalar(0.32);
             if (mat.emissive) { mat.emissive.copy(v.baseColor).multiplyScalar(0.12); mat.emissiveIntensity = 0.15; }
@@ -1168,9 +1262,9 @@
           }
         }
         if (ghost) {
-          if (v.modeRing) v.modeRing.material.opacity = 0.08;
-          if (v.equatorRing) v.equatorRing.material.opacity = 0.1;
-          if (v.hubWire) v.hubWire.material.opacity = 0.05;
+          if (v.modeRing) v.modeRing.material.opacity = 0.22;
+          if (v.equatorRing) v.equatorRing.material.opacity = 0.24;
+          if (v.hubWire) v.hubWire.material.opacity = 0.12;
           return;
         }
         if (offline) {
@@ -1329,9 +1423,25 @@
         graph.nodeThreeObject(function(node) { return makeNodeObject(node); });
         graph.nodeThreeObjectExtend(false);
         graph.nodeRelSize(6);
-        graph.linkColor(function(l) { return l._ghost ? '#2a3040' : (l.color || '#4a6080'); });
-        graph.linkWidth(4.0);
-        graph.linkOpacity(function(l) { return l._ghost ? 0.06 : 0.25; });
+        graph.linkColor(function(l) {
+          if (l._ghost) return '#2a3040';
+          if (l.medium === 'hdmi') return l.status === 'up' ? '#ff6e40' : '#8d6e63';
+          return l.color || '#4a6080';
+        });
+        graph.linkWidth(function(l) {
+          if (l._ghost) return 0.8;
+          if (l.medium === 'hdmi') return l.status === 'up' ? 7 : 4;
+          if (l.status === 'topology') return 1.2;
+          if (l.status === 'available') return 2.5;
+          return 4.0;
+        });
+        graph.linkOpacity(function(l) {
+          if (l._ghost) return 0.06;
+          if (l.medium === 'hdmi') return l.status === 'up' ? 0.7 : 0.28;
+          if (l.status === 'topology') return 0.14;
+          if (l.status === 'available') return 0.2;
+          return 0.25;
+        });
         graph.linkLabel(function(l) { return (l.label || '') + (l.title ? '\n' + l.title : ''); });
         graph.linkDirectionalArrowLength(function(l) { return l.directed ? 4.5 : 0; });
         graph.linkDirectionalArrowRelPos(0.88);
@@ -1361,6 +1471,7 @@
           var s = gData && gData.nodes.find(function(n) { return n.id === sid; });
           var t = gData && gData.nodes.find(function(n) { return n.id === tid; });
           if (s && t && (s.runs_on === tid || t.runs_on === sid)) return 320;
+          if (l.medium === 'hdmi') return 110;
           if (l.medium === 'docker_bridge') return 500;
           return 500 + ((s && s.val) || 5) * 12 + ((t && t.val) || 5) * 12;
         });
@@ -1397,6 +1508,7 @@
       document.getElementById('err').style.display = 'none';
       document.getElementById('meta').textContent =
         'Updated ' + api.generated + ' · ' + api.scanner +
+        (api.layout_pins && api.layout_pins.length ? ' · pins:' + api.layout_pins.join('+') : '') +
         ' · HA ' + (api.ha_api ? 'on' : 'off') +
         (api.ha_discovered ? ' · HA+' + api.ha_discovered : '') +
         (api.arp_discovered ? ' · LAN+' + api.arp_discovered : '') +

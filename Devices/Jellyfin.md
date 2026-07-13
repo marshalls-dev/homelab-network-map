@@ -1,41 +1,37 @@
 ---
 type: device
 status: online
-mode: standby
-latency_ms: 28.9
+mode: active
+latency_ms: 41.0
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
 generated: 2026-07-12 12:00:00
 ---
 
-# Phantom Proxy
+# Jellyfin
 
-> Xbox LAN discovery · Windows native
+> Media server · VERBATIM HD (D:)
 
 | Field | Value |
 |-------|-------|
 | **Reachability** | **online** |
-| **Mode** | **standby** |
-| **Ping avg** | 28.9 ms |
+| **Mode** | **active** |
+| **Ping avg** | 41.0 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.169 |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-phantom-windows.exe on ZBook
+Native Windows app on ZBook (not Docker/WSL)
 
 ## Services
-- Bedrock LAN UDP :19132
-- Proxy channel :19134
-
-## Port check
-- **19134**: closed
-
+- HTTP :8096
+- Library scan · D:\
 
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| → [[Devices/Minecraft Paper|Minecraft Paper]] | Windows portproxy | bidirectional | data | up | Windows Phantom → WSL Geyser :19133 |
-| ↔ [[Devices/Xbox One|Xbox One]] | Minecraft Bedrock (UDP) | bidirectional | data | available | LAN discovery UDP :19132 · Friends tab |
+| ↔ [[Devices/Xbox One|Xbox One]] | HTTP / Web UI | bidirectional | data | available | Jellyfin app · streams from ZBook |
+| ↔ [[Devices/ZBook Server|ZBook Server]] | Logical / documented link | bidirectional | management | up | Native Windows service · reads D:\ |
 | ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | Helix / LAN Wi‑Fi |

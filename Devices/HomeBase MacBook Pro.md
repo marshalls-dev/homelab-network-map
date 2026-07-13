@@ -2,10 +2,10 @@
 type: device
 status: online
 mode: active
-latency_ms: 95.7
+latency_ms: 57.7
 packet_loss_pct: 0.0
 tags: [homelab, homeassistant]
-generated: 2026-06-21 17:52:17
+generated: 2026-07-12 12:00:00
 ---
 
 # HomeBase MacBook Pro
@@ -16,7 +16,7 @@ generated: 2026-06-21 17:52:17
 |-------|-------|
 | **Reachability** | **online** |
 | **Mode** | **active** |
-| **Ping avg** | 95.7 ms |
+| **Ping avg** | 57.7 ms |
 | **Packet loss** | 0.0% |
 | **Address** | 10.0.0.8 |
 | **Tailscale** | — |
@@ -40,6 +40,8 @@ HomeBases-MBP · Tests-MacBook-Pro
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | Family Mac |
-| → [[Devices/ZBook Server|ZBook Server]] | Wi-Fi | bidirectional | management | up | LAN file share |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | up | Home Base Mac · primary HA host |
+| → [[Devices/Home Assistant|Home Assistant]] | Docker bridge (WSL2) | bidirectional | data | up | Docker Compose on Home Base Mac |
+| ↔ [[Devices/MacBook Pro (This Mac)|MacBook Pro (This Mac)]] | Wi-Fi | bidirectional | management | up | Home Base Mac · deploy |
+| → [[Devices/ZBook Server|ZBook Server]] | Wi-Fi | bidirectional | management | up | LAN · basement camera ingest |
 | ↔ [[Devices/Home Assistant|Home Assistant]] | Home Assistant app | bidirectional | control | up | HA Companion · unknown |

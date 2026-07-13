@@ -18,6 +18,8 @@ How to read links in [[Network Map]] and [[network-graph.html]].
 | Logical / documented link | `logical` | dashed |
 | Bluetooth (personal) | `bluetooth` | dashed |
 | Home Assistant app | `ha_mobile` | dashed |
+| Minecraft Bedrock (UDP) | `bedrock` | dashed |
+| HDMI video | `hdmi` | solid |
 
 ## Traffic types
 | Type | Meaning |

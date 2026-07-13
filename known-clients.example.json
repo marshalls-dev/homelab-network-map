@@ -19,6 +19,21 @@
       "short": "Fire tab",
       "personality": "edge",
       "hardware": "Amazon Fire · Fully Kiosk or browser"
+    },
+    "10.0.0.143": {
+      "id": "basement-projector",
+      "name": "LG Basement Projector",
+      "short": "Projector",
+      "personality": "display",
+      "role": "LG PF1500W webOS · basement HDMI display",
+      "hardware": "LG webOS PJTR PF1500W"
+    },
+    "10.0.0.145": {
+      "id": "xbox-one",
+      "name": "Xbox One",
+      "short": "Xbox",
+      "personality": "edge",
+      "role": "Basement · Jellyfin + Minecraft"
     }
   },
   "by_mac": {

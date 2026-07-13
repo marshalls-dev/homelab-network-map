@@ -1,29 +1,29 @@
 ---
 type: device
-status: offline
-mode: offline
+status: unknown
+mode: unknown
 latency_ms: null
-packet_loss_pct: 100.0
+packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-09 23:10:49
+generated: 2026-07-12 12:00:00
 ---
 
 # LG Dryer
 
-> Helix · QCA4002-69
+> Helix catalog · QCA4002-69
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **offline** |
-| **Mode** | **offline** |
+| **Reachability** | **unknown** |
+| **Mode** | **unknown** |
 | **Ping avg** | — |
-| **Packet loss** | 100.0% |
-| **Address** | 10.0.0.112 |
+| **Packet loss** | — |
+| **Address** | — |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-Helix: QCA4002-69 · 00:51:ED:50:39:DB
+Helix: QCA4002-69
 
 ## Services
 
@@ -31,4 +31,4 @@ Helix: QCA4002-69 · 00:51:ED:50:39:DB
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Helix router registry |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Helix catalog · offline OK |

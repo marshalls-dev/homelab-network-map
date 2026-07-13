@@ -1,29 +1,29 @@
 ---
 type: device
-status: offline
-mode: offline
+status: unknown
+mode: unknown
 latency_ms: null
-packet_loss_pct: 100.0
+packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-09 23:10:49
+generated: 2026-07-12 12:00:00
 ---
 
 # Tuya Smart Bulb
 
-> Helix · CT-bulb-9573b8
+> Helix catalog · CT-bulb-9573b8
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **offline** |
-| **Mode** | **offline** |
+| **Reachability** | **unknown** |
+| **Mode** | **unknown** |
 | **Ping avg** | — |
-| **Packet loss** | 100.0% |
-| **Address** | 10.0.0.106 |
+| **Packet loss** | — |
+| **Address** | — |
 | **Tailscale** | — |
 | **HA state** | — |
 
 ## Hardware
-Helix: CT-bulb-9573b8 · C4:DD:57:95:73:B8
+Helix: CT-bulb-9573b8
 
 ## Services
 
@@ -31,4 +31,4 @@ Helix: CT-bulb-9573b8 · C4:DD:57:95:73:B8
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Helix router registry |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi | bidirectional | routing | degraded | Helix catalog · offline OK |

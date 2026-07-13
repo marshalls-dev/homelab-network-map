@@ -1,29 +1,29 @@
 ---
 type: device
-status: online
-mode: off
+status: unknown
+mode: unknown
 latency_ms: null
 packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-09 23:08:09
+generated: 2026-07-12 12:00:00
 ---
 
 # Plug 2 · Shed
 
-> Smart plug · Home Assistant outlet
+> Tuya smart plug
 
 | Field | Value |
 |-------|-------|
-| **Reachability** | **online** |
-| **Mode** | **off** |
+| **Reachability** | **unknown** |
+| **Mode** | **unknown** |
 | **Ping avg** | — |
 | **Packet loss** | — |
 | **Address** | — |
 | **Tailscale** | — |
-| **HA state** | Plug 2 · Shed: off |
+| **HA state** | — |
 
 ## Hardware
-Wi‑Fi smart plug
+Tuya Wi-Fi plug
 
 ## Services
 - switch.plug_2_socket_1
@@ -31,5 +31,4 @@ Wi‑Fi smart plug
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
-| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi 2.4 GHz | bidirectional | routing | up | Smart plug · cloud IoT (no LAN IP) · Plug 2 · Shed |
-| ↔ [[Devices/Home Assistant|Home Assistant]] | Cloud API (Tuya) | bidirectional | control | up | Tuya / HA cloud control · Plug 2 · Shed |
+| ↔ [[Devices/Router Gateway|Router Gateway]] | Wi-Fi 2.4 GHz | bidirectional | routing | degraded | Tuya plug · catalog |

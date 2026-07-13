@@ -5,7 +5,7 @@ mode: unknown
 latency_ms: null
 packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-21 17:52:17
+generated: 2026-07-12 12:00:00
 ---
 
 # Tuya Smart Plugs

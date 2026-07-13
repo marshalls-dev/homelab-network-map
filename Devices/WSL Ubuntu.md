@@ -5,7 +5,7 @@ mode: active
 latency_ms: null
 packet_loss_pct: null
 tags: [homelab, homeassistant]
-generated: 2026-06-21 17:52:17
+generated: 2026-07-12 12:00:00
 ---
 
 # WSL Ubuntu
@@ -27,14 +27,10 @@ Ubuntu WSL2 · Docker
 
 ## Services
 - Docker
-- Home Assistant container
-- Glances
 - Minecraft Paper+Geyser
 
 ## Connections
 | Link | Medium | Direction | Traffic | Path | Notes |
 |------|--------|-----------|---------|------|-------|
 | ↔ [[Devices/ZBook Server|ZBook Server]] | Docker bridge (WSL2) | bidirectional | management | up | Hyper-V virtual switch |
-| → [[Devices/Home Assistant|Home Assistant]] | Docker bridge (WSL2) | bidirectional | data | up | HA container bind mount |
 | → [[Devices/Minecraft Paper|Minecraft Paper]] | Docker bridge (WSL2) | bidirectional | data | up | Paper server container |
-| → [[Devices/Phantom Proxy|Phantom Proxy]] | Docker bridge (WSL2) | bidirectional | data | up | Host-network phantom |
